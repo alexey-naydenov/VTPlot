@@ -23,14 +23,17 @@
 import os
 import sys
 
-from PyQt4 import QtGui
-from PyQt4 import QtCore
+import tables
+
+import PyQt4.QtGui as pqg
+import PyQt4.QtCore as pqc
 
 from vitables import utils as vtutils
 from vitables import plugin_utils
 
 from vitables.plugins.vtplot import defaults
 from vitables.plugins.vtplot import about_page
+from vitables.plugins.vtplot import dataplot
 
 __author__ = defaults.AUTHOR
 __version__ = defaults.VERSION
@@ -40,19 +43,20 @@ plugin_name = defaults.PLUGIN_NAME
 comment = defaults.COMMENT
 
 def _(s):
-    return QtGui.QApplication.translate(defaults.MODULE_NAME, s)
+    return pqg.QApplication.translate(defaults.MODULE_NAME, s)
 
-class VTPlot(QtCore.QObject):
+class VTPlot(pqc.QObject):
     """Main plugin class for all plotting stuff."""
 
     def __init__(self):
         super(VTPlot, self).__init__()
         
         self._vtgui = plugin_utils.getVTGui()
-        self._settings = QtCore.QSettings()
+        self._mdiarea = self._vtgui.workspace
+        self._settings = pqc.QSettings()
         self._logger = plugin_utils.getLogger(defaults.MODULE_NAME)
-
         self._add_submenu()
+        
 
     def helpAbout(self, parent):
         self._about_page = about_page.AboutPage(parent)
@@ -60,17 +64,31 @@ class VTPlot(QtCore.QObject):
 
     def _add_submenu(self):
         """Add submenu with plot actions."""
-        self._submenu = QtGui.QMenu(_(defaults.MENU_NAME))
-        actions = {}
-        actions['nothing'] = QtGui.QAction(
-            _('Nothing'), self, shortcut=QtGui.QKeySequence.UnknownKey,
-            triggered=self._do_nothing, statusTip=_('Nothing'))
-        self._submenu.addAction(actions['nothing'])
+        actions = [
+            pqg.QAction(_('Double plot'), self, 
+                          triggered=self._plot_large_array,
+                          shortcut=pqg.QKeySequence.UnknownKey,
+                          statusTip=_('Plot large array.'))
+        ]
+        self._submenu = pqg.QMenu(_(defaults.MENU_NAME))
+        for action in actions:
+            self._submenu.addAction(action)
 
         plugin_utils.addToMenuBar(self._submenu)
-
-        plugin_utils.addToLeafContextMenu(actions.values())
 
     def _do_nothing(self):
         """Test plug that logs a message."""
         self._logger.debug('Doing nothing')
+
+    def _plot_large_array(self):
+        """One dimensional array plot."""
+        # find selected object and check that it is an array
+        current_index = self._vtgui.dbs_tree_view.currentIndex()
+        dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(current_index)
+        if not isinstance(dbt_leaf.node, tables.Array):
+            self._logger.error(_('Selected object is not an array'))
+            return
+        plot_window = dataplot.DataPlot(self._mdiarea, current_index, 
+                                        pqg.QTextEdit())
+        self._mdiarea.addSubWindow(plot_window)
+        plot_window.show()
