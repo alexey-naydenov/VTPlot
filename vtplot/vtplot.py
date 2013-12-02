@@ -27,7 +27,6 @@ from PyQt4 import QtGui
 from PyQt4 import QtCore
 
 from vitables import utils as vtutils
-from vitables import vtSite
 from vitables import plugin_utils
 
 from vitables.plugins.vtplot import defaults
@@ -60,8 +59,8 @@ class VTPlot(QtCore.QObject):
         return self._about_page
 
     def _add_submenu(self):
-        """Add submenu for map actions."""
-        self._submenu = QtGui.QMenu(_('Plot'))
+        """Add submenu with plot actions."""
+        self._submenu = QtGui.QMenu(_(defaults.MENU_NAME))
         actions = {}
         actions['nothing'] = QtGui.QAction(
             _('Nothing'), self, shortcut=QtGui.QKeySequence.UnknownKey,
@@ -73,5 +72,5 @@ class VTPlot(QtCore.QObject):
         plugin_utils.addToLeafContextMenu(actions.values())
 
     def _do_nothing(self):
-        """Log a message."""
+        """Test plug that logs a message."""
         self._logger.debug('Doing nothing')
