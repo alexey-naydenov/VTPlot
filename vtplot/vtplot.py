@@ -23,10 +23,11 @@
 import os
 import sys
 
-import tables
+import PyQt4.QtGui as qtgui
+import PyQt4.QtCore as qtcore
 
-import PyQt4.QtGui as pqg
-import PyQt4.QtCore as pqc
+import tables
+import pyqtgraph as qtgraph
 
 from vitables import utils as vtutils
 from vitables import plugin_utils
@@ -43,9 +44,9 @@ plugin_name = defaults.PLUGIN_NAME
 comment = defaults.COMMENT
 
 def _(s):
-    return pqg.QApplication.translate(defaults.MODULE_NAME, s)
+    return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
 
-class VTPlot(pqc.QObject):
+class VTPlot(qtcore.QObject):
     """Main plugin class for all plotting stuff."""
 
     def __init__(self):
@@ -53,7 +54,7 @@ class VTPlot(pqc.QObject):
         
         self._vtgui = plugin_utils.getVTGui()
         self._mdiarea = self._vtgui.workspace
-        self._settings = pqc.QSettings()
+        self._settings = qtcore.QSettings()
         self._logger = plugin_utils.getLogger(defaults.MODULE_NAME)
         self._add_submenu()
         
@@ -65,12 +66,12 @@ class VTPlot(pqc.QObject):
     def _add_submenu(self):
         """Add submenu with plot actions."""
         actions = [
-            pqg.QAction(_('Double plot'), self, 
+            qtgui.QAction(_('Double plot'), self, 
                           triggered=self._plot_large_array,
-                          shortcut=pqg.QKeySequence.UnknownKey,
+                          shortcut=qtgui.QKeySequence.UnknownKey,
                           statusTip=_('Plot large array.'))
         ]
-        self._submenu = pqg.QMenu(_(defaults.MENU_NAME))
+        self._submenu = qtgui.QMenu(_(defaults.MENU_NAME))
         for action in actions:
             self._submenu.addAction(action)
 
@@ -88,7 +89,11 @@ class VTPlot(pqc.QObject):
         if not isinstance(dbt_leaf.node, tables.Array):
             self._logger.error(_('Selected object is not an array'))
             return
+        # create graphics objects
+        graph_layout = qtgraph.GraphicsLayoutWidget()
+        whole_plot = graph_layout.addPlot(row=0, col=0)
+        # create mdi window
         plot_window = dataplot.DataPlot(self._mdiarea, current_index, 
-                                        pqg.QTextEdit())
+                                        graph_layout)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
