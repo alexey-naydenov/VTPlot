@@ -22,6 +22,7 @@
 
 import os
 import sys
+import functools
 
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
@@ -45,6 +46,17 @@ comment = defaults.COMMENT
 
 def _(s):
     return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
+
+def sync_plot_to_region(plot, region):
+    region.setZValue(10)
+    minX, maxX = region.getRegion()
+    # padding is important because range and plot update each other on
+    # change
+    plot.setXRange(minX, maxX, padding=0)
+
+def sync_region_to_plot(region, window, view_range):
+    rgn = view_range[0]
+    region.setRegion(rgn)
 
 class VTPlot(qtcore.QObject):
     """Main plugin class for all plotting stuff."""
@@ -111,7 +123,6 @@ class VTPlot(qtcore.QObject):
         # setup plots
         zoom_plot.setAutoVisible(y=True)
         region = qtgraph.LinearRegionItem(
-            values = [0, max(1000, 0.1*leaf.shape[0])],
             orientation=qtgraph.LinearRegionItem.Vertical)
         region.setZValue(10)
         # Add the LinearRegionItem to the ViewBox, but tell the
@@ -120,7 +131,11 @@ class VTPlot(qtcore.QObject):
         whole_plot.addItem(region, ignoreBounds=True)
         zoom_plot.plot(leaf)
         whole_plot.plot(leaf)
-        
+        region.sigRegionChanged.connect(
+            functools.partial(sync_plot_to_region, zoom_plot, region))
+        zoom_plot.sigRangeChanged.connect(
+            functools.partial(sync_region_to_plot, region))
+        region.setRegion([0, max(1000, 0.1*leaf.shape[0])])
         # create and show plot window
         index = self._vtgui.dbs_tree_view.currentIndex()
         window = dataplot.DataPlot(self._mdiarea, index, layout)
