@@ -20,12 +20,12 @@
 
 """QMdiSubWindow adapter to fit vitables application."""
 
-import PyQt4.QtGui as pqg
-import PyQt4.QtCore as pqc
+import PyQt4.QtGui as qtgui
+import PyQt4.QtCore as qtcore
 
 import vitables.plugin_utils as vtpu
 
-class DataPlot(pqg.QMdiSubWindow):
+class DataPlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
     def __init__(self, parent, index, widget):
         super(DataPlot, self).__init__(parent)
@@ -33,7 +33,8 @@ class DataPlot(pqg.QMdiSubWindow):
         self._vtgui = vtpu.getVTGui()
         # window options
         self.setWidget(widget)
-        self.setAttribute(pqc.Qt.WA_DeleteOnClose)
+        self.setAttribute(qtcore.Qt.WA_DeleteOnClose)
         # stuff that vitables looks for
         self.dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(index)
-        self.pindex = pqc.QPersistentModelIndex(index)
+        self.pindex = qtcore.QPersistentModelIndex(index)
+        self.is_context_menu_custom = True

@@ -67,9 +67,9 @@ class VTPlot(qtcore.QObject):
         """Add submenu with plot actions."""
         actions = [
             qtgui.QAction(_('Double plot'), self, 
-                          triggered=self._plot_large_array,
+                          triggered=self._plot_large_1d_array,
                           shortcut=qtgui.QKeySequence.UnknownKey,
-                          statusTip=_('Plot large array.'))
+                          statusTip=_('Plot long array.'))
         ]
         self._submenu = qtgui.QMenu(_(defaults.MENU_NAME))
         for action in actions:
@@ -81,19 +81,49 @@ class VTPlot(qtcore.QObject):
         """Test plug that logs a message."""
         self._logger.debug('Doing nothing')
 
-    def _plot_large_array(self):
-        """One dimensional array plot."""
-        # find selected object and check that it is an array
-        current_index = self._vtgui.dbs_tree_view.currentIndex()
-        dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(current_index)
-        if not isinstance(dbt_leaf.node, tables.Array):
+    def _set_to_plot_name(self, window):
+        """Change window title to current leaf name."""
+        window.setWindowTitle(plugin_utils.getSelectedLeaf().name)
+
+    def _is_dimesionality_of_selection(self, dimensions_count):
+        """Check if selected object is a leav and has right dimentsionality."""
+        current = self._vtgui.dbs_tree_view.currentIndex()
+        dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(current)
+        if not isinstance(dbt_leaf.node, tables.Leaf):
             self._logger.error(_('Selected object is not an array'))
+            return False
+        if len(dbt_leaf.node.shape) != dimensions_count:
+            self._logger.error(_('Selected object does not have the right '
+                                 'number of dimensions'))
+            return False
+        else:
+            return True
+
+    @plugin_utils.long_action(_('Plotting data, please wait ...'))
+    def _plot_large_1d_array(self, unused):
+        """Plot whole array along with zoomed in version."""
+        if not self._is_dimesionality_of_selection(1):
             return
-        # create graphics objects
-        graph_layout = qtgraph.GraphicsLayoutWidget()
-        whole_plot = graph_layout.addPlot(row=0, col=0)
-        # create mdi window
-        plot_window = dataplot.DataPlot(self._mdiarea, current_index, 
-                                        graph_layout)
-        self._mdiarea.addSubWindow(plot_window)
-        plot_window.show()
+        layout = qtgraph.GraphicsLayoutWidget()
+        zoom_plot = layout.addPlot(row=0, col=0)
+        whole_plot = layout.addPlot(row=1, col=0)
+        leaf = plugin_utils.getSelectedLeaf()
+        # setup plots
+        zoom_plot.setAutoVisible(y=True)
+        region = qtgraph.LinearRegionItem(
+            values = [0, max(1000, 0.1*leaf.shape[0])],
+            orientation=qtgraph.LinearRegionItem.Vertical)
+        region.setZValue(10)
+        # Add the LinearRegionItem to the ViewBox, but tell the
+        # ViewBox to exclude this item when doing auto-range
+        # calculations.
+        whole_plot.addItem(region, ignoreBounds=True)
+        zoom_plot.plot(leaf)
+        whole_plot.plot(leaf)
+        
+        # create and show plot window
+        index = self._vtgui.dbs_tree_view.currentIndex()
+        window = dataplot.DataPlot(self._mdiarea, index, layout)
+        self._set_to_plot_name(window)
+        self._mdiarea.addSubWindow(window)
+        window.show()
