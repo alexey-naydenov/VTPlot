@@ -47,16 +47,73 @@ comment = defaults.COMMENT
 def _(s):
     return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
 
-def sync_plot_to_region(plot, region):
+def sync_plot_to_region(plot, region, other):
     region.setZValue(10)
     minX, maxX = region.getRegion()
-    # padding is important because range and plot update each other on
+    # padding = 0 is important because range and plot update each other on
     # change
     plot.setXRange(minX, maxX, padding=0)
 
 def sync_region_to_plot(region, window, view_range):
     rgn = view_range[0]
     region.setRegion(rgn)
+
+def move_crosshair(view_box, vertical_line, horizontal_line, event):
+    """Move crosshair on mouse event, use with SignalProxy."""
+    position = event[0]  # signal proxy turns original arguments into a tuple
+    if not view_box.sceneBoundingRect().contains(position):
+        return
+    mouse_point = view_box.mapSceneToView(position)
+    vertical_line.setPos(mouse_point.x())
+    horizontal_line.setPos(mouse_point.y())
+
+def add_crosshair_to(plot):
+    """Connect mouse move to drawing crosshair on plot."""
+    vertical_line = qtgraph.InfiniteLine(angle=90, movable=False)
+    horizontal_line = qtgraph.InfiniteLine(angle=0, movable=False)
+    plot.addItem(vertical_line, ignoreBounds=True)
+    plot.addItem(horizontal_line, ignoreBounds=True)
+    proxy = qtgraph.SignalProxy(
+        plot.scene().sigMouseMoved, rateLimit=60, 
+        slot=functools.partial(move_crosshair, plot.getViewBox(), 
+                               vertical_line, horizontal_line))
+    plot.crosshair_proxy = proxy # proxy must persist with the plot
+
+def get_data_item_color(data_item):
+    return data_item.curve.opts['pen'].color().name()
+
+def get_data_item_value(data_item, position):
+    index = int(position + 0.5)
+    if index < 0 or index >= len(data_item.yData):
+        return 0
+    return data_item.yData[index]
+
+LEGEND_LINE = "<span style='color: {color}'>{name} = {value:.3g}</span>"
+def update_value_legend(plot_item, label, event):
+    """Display data values at x cursor position, use with SignalProxy."""
+    position = event[0]  # signal proxy turns original arguments into a tuple
+    view_box = plot_item.getViewBox()
+    if not view_box.sceneBoundingRect().contains(position):
+        return
+    mouse_point = view_box.mapSceneToView(position)
+    legend = [
+        LEGEND_LINE.format(color='white', name='x', value=mouse_point.x()),
+        LEGEND_LINE.format(color='white', name='y', value=mouse_point.y())]
+    for i, di in enumerate(plot_item.listDataItems()):
+        if di.yData is None: # labels also data items
+            continue
+        legend.append(LEGEND_LINE.format(
+            color=get_data_item_color(di), name='y' + str(i+1),
+            value=get_data_item_value(di, mouse_point.x())))
+    label.setText('<br/>'.join(legend))
+
+def add_legend_with_values_to(plot, label):
+    """Show legend with data values under cursor."""
+    proxy = qtgraph.SignalProxy(
+        plot.scene().sigMouseMoved, rateLimit=60,
+        slot=functools.partial(update_value_legend, plot, label))
+    plot.data_values_proxy = proxy # proxy must persist with the plot
+    
 
 class VTPlot(qtcore.QObject):
     """Main plugin class for all plotting stuff."""
@@ -69,7 +126,6 @@ class VTPlot(qtcore.QObject):
         self._settings = qtcore.QSettings()
         self._logger = plugin_utils.getLogger(defaults.MODULE_NAME)
         self._add_submenu()
-        
 
     def helpAbout(self, parent):
         self._about_page = about_page.AboutPage(parent)
@@ -78,7 +134,7 @@ class VTPlot(qtcore.QObject):
     def _add_submenu(self):
         """Add submenu with plot actions."""
         actions = [
-            qtgui.QAction(_('Double plot'), self, 
+            qtgui.QAction(_('Dual plot'), self, 
                           triggered=self._plot_large_1d_array,
                           shortcut=qtgui.QKeySequence.UnknownKey,
                           statusTip=_('Plot long array.'))
@@ -116,26 +172,34 @@ class VTPlot(qtcore.QObject):
         """Plot whole array along with zoomed in version."""
         if not self._is_dimesionality_of_selection(1):
             return
+        # create layout and plot
         layout = qtgraph.GraphicsLayoutWidget()
-        zoom_plot = layout.addPlot(row=0, col=0)
-        whole_plot = layout.addPlot(row=1, col=0)
-        leaf = plugin_utils.getSelectedLeaf()
+        label = qtgraph.LabelItem(justify='right')
+        layout.addItem(label) # row=0, col=0
+        zoom_plot = layout.addPlot(row=1, col=0)
+        whole_plot = layout.addPlot(row=2, col=0)
         # setup plots
-        zoom_plot.setAutoVisible(y=True)
+        zoom_plot.setAutoVisible(y=True) # no idea what this does
+        add_crosshair_to(zoom_plot)
+        add_legend_with_values_to(zoom_plot, label)
         region = qtgraph.LinearRegionItem(
             orientation=qtgraph.LinearRegionItem.Vertical)
-        region.setZValue(10)
+        region.setZValue(10) # probably transparency
         # Add the LinearRegionItem to the ViewBox, but tell the
         # ViewBox to exclude this item when doing auto-range
         # calculations.
         whole_plot.addItem(region, ignoreBounds=True)
+        # plot data
+        leaf = plugin_utils.getSelectedLeaf()
         zoom_plot.plot(leaf)
         whole_plot.plot(leaf)
+        # connect signals between zoom_plot and region selection tool
         region.sigRegionChanged.connect(
             functools.partial(sync_plot_to_region, zoom_plot, region))
         zoom_plot.sigRangeChanged.connect(
             functools.partial(sync_region_to_plot, region))
-        region.setRegion([0, max(1000, 0.1*leaf.shape[0])])
+        max_len = min(1000, leaf.shape[0])
+        region.setRegion([0, max(max_len, 0.1*leaf.shape[0])])
         # create and show plot window
         index = self._vtgui.dbs_tree_view.currentIndex()
         window = dataplot.DataPlot(self._mdiarea, index, layout)

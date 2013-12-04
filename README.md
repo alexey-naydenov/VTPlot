@@ -26,3 +26,10 @@ workon vtplot
 ```sh
 cp -a vtplot ${VIRTUAL_ENV}/lib/python2.7/site-packages/vitables/plugins && ${VIRTUAL_ENV}/bin/vitables  -vvv
 ```
+
+## TODO ##
+
+* There seems to be a problem with plot object destruction.  Core
+  dumps on close sometimes, happens rarely and it is not clear what
+  sequence of operations lead to this. It might be caused by functools
+  use in signals.
