@@ -24,7 +24,7 @@ workon vtplot
 4. Copy `VTPlot` into `vitables` plugin folder and run it:
 
 ```sh
-cp -a vtplot ${VIRTUAL_ENV}/lib/python2.7/site-packages/vitables/plugins && ${VIRTUAL_ENV}/bin/vitables  -vvv
+cp -a vtplot ${VIRTUAL_ENV}/lib/python2.7/site-packages/vitables/plugins && ${VIRTUAL_ENV}/bin/vitables -vvv vtplot/test/data/array.h5
 ```
 
 ## TODO ##
