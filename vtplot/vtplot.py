@@ -107,7 +107,7 @@ def update_value_legend(plot_item, label, event):
         legend.append(LEGEND_LINE.format(
             color=get_data_item_color(di), name='y' + str(i+1),
             value=get_data_item_value(di, mouse_point.x())))
-    label.setText(' '.join(legend))
+    label.setText(', '.join(legend))
 
 def add_legend_with_values_to(plot, label):
     """Show legend with data values under cursor."""
@@ -155,7 +155,8 @@ class VTPlot(qtcore.QObject):
 
     def _set_to_plot_name(self, window):
         """Change window title to current leaf name."""
-        window.setWindowTitle(plugin_utils.getSelectedLeaf().name)
+        window.setWindowTitle('Dual plot - '
+                              + plugin_utils.getSelectedLeaf().name)
 
     def _is_dimesionality_of_selection(self, dimensions_count):
         """Check if selected object is a leav and has right dimentsionality."""
@@ -178,8 +179,8 @@ class VTPlot(qtcore.QObject):
             return
         # create layout and plot
         layout = qtgraph.GraphicsLayoutWidget()
-        label = qtgraph.LabelItem(justify='right')
-        layout.addItem(label) # row=0, col=0
+        label = qtgraph.LabelItem(justify='left')
+        layout.addItem(label, row=0, col=0)
         zoom_plot = layout.addPlot(row=1, col=0)
         whole_plot = layout.addPlot(row=2, col=0)
         # setup plots
