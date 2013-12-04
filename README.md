@@ -8,7 +8,7 @@ ViTables data plotting plugin.
 1. Install `virtualenvwrapper` and create an environment
 
 ```sh
-mkvirtualenv --python=python3.3 --system-site-packages vtplot
+mkvirtualenv --python=python2.7 --system-site-packages vtplot
 ```
 or start working in already created environment
 

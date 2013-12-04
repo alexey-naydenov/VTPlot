@@ -47,6 +47,8 @@ comment = defaults.COMMENT
 def _(s):
     return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
 
+PLOT_COLORS = ['b', 'r', 'g', 'c', 'm', 'y']
+
 def sync_plot_to_region(plot, region, other):
     region.setZValue(10)
     minX, maxX = region.getRegion()
@@ -97,15 +99,15 @@ def update_value_legend(plot_item, label, event):
         return
     mouse_point = view_box.mapSceneToView(position)
     legend = [
-        LEGEND_LINE.format(color='white', name='x', value=mouse_point.x()),
-        LEGEND_LINE.format(color='white', name='y', value=mouse_point.y())]
+        LEGEND_LINE.format(color='black', name='x', value=mouse_point.x()),
+        LEGEND_LINE.format(color='black', name='y', value=mouse_point.y())]
     for i, di in enumerate(plot_item.listDataItems()):
-        if di.yData is None: # labels also data items
+        if di.yData is None:
             continue
         legend.append(LEGEND_LINE.format(
             color=get_data_item_color(di), name='y' + str(i+1),
             value=get_data_item_value(di, mouse_point.x())))
-    label.setText('<br/>'.join(legend))
+    label.setText(' '.join(legend))
 
 def add_legend_with_values_to(plot, label):
     """Show legend with data values under cursor."""
@@ -114,7 +116,6 @@ def add_legend_with_values_to(plot, label):
         slot=functools.partial(update_value_legend, plot, label))
     plot.data_values_proxy = proxy # proxy must persist with the plot
     
-
 class VTPlot(qtcore.QObject):
     """Main plugin class for all plotting stuff."""
 
@@ -126,6 +127,9 @@ class VTPlot(qtcore.QObject):
         self._settings = qtcore.QSettings()
         self._logger = plugin_utils.getLogger(defaults.MODULE_NAME)
         self._add_submenu()
+        # pyqtgraph options
+        qtgraph.setConfigOption('background', 'w')
+        qtgraph.setConfigOption('foreground', 'k')
 
     def helpAbout(self, parent):
         self._about_page = about_page.AboutPage(parent)
@@ -191,8 +195,8 @@ class VTPlot(qtcore.QObject):
         whole_plot.addItem(region, ignoreBounds=True)
         # plot data
         leaf = plugin_utils.getSelectedLeaf()
-        zoom_plot.plot(leaf)
-        whole_plot.plot(leaf)
+        zoom_plot.plot(leaf, pen=PLOT_COLORS[0])
+        whole_plot.plot(leaf, pen=PLOT_COLORS[0])
         # connect signals between zoom_plot and region selection tool
         region.sigRegionChanged.connect(
             functools.partial(sync_plot_to_region, zoom_plot, region))
