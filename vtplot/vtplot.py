@@ -107,7 +107,7 @@ def update_value_legend(plot_item, label, event):
         legend.append(LEGEND_LINE.format(
             color=get_data_item_color(di), name='y' + str(i+1),
             value=get_data_item_value(di, mouse_point.x())))
-    label.setText(', '.join(legend))
+    label.setText('<br/>'.join(legend))
 
 def add_legend_with_values_to(plot, label):
     """Show legend with data values under cursor."""
@@ -178,9 +178,11 @@ class VTPlot(qtcore.QObject):
         if not self._is_dimesionality_of_selection(1):
             return
         # create layout and plot
-        layout = qtgraph.GraphicsLayoutWidget(parent=self._vtgui)
+        layout = qtgraph.GraphicsLayoutWidget()
         label = qtgraph.LabelItem(justify='left')
-        layout.addItem(label, row=0, col=0)
+        label.setText(' ----------------------')
+        layout.addItem(label, row=1, col=1)
+        label.setFixedWidth(200)
         zoom_plot = layout.addPlot(row=1, col=0)
         whole_plot = layout.addPlot(row=2, col=0)
         # setup plots

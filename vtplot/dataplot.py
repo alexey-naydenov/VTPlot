@@ -38,3 +38,4 @@ class DataPlot(qtgui.QMdiSubWindow):
         self.dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(index)
         self.pindex = qtcore.QPersistentModelIndex(index)
         self.is_context_menu_custom = True
+        widget.setParent(self)
