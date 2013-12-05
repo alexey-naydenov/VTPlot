@@ -36,6 +36,7 @@ from vitables import plugin_utils
 from vitables.plugins.vtplot import defaults
 from vitables.plugins.vtplot import about_page
 from vitables.plugins.vtplot import dataplot
+from vitables.plugins.vtplot.singleplot import SinglePlot
 
 __author__ = defaults.AUTHOR
 __version__ = defaults.VERSION
@@ -138,6 +139,10 @@ class VTPlot(qtcore.QObject):
     def _add_submenu(self):
         """Add submenu with plot actions."""
         actions = [
+            qtgui.QAction(_('Plot'), self, 
+                          triggered=self._plot_1d_array,
+                          shortcut=qtgui.QKeySequence.UnknownKey,
+                          statusTip=_('Plot an array.')),
             qtgui.QAction(_('Dual plot'), self, 
                           triggered=self._plot_large_1d_array,
                           shortcut=qtgui.QKeySequence.UnknownKey,
@@ -213,3 +218,13 @@ class VTPlot(qtcore.QObject):
         self._set_to_plot_name(window)
         self._mdiarea.addSubWindow(window)
         window.show()
+
+    @plugin_utils.long_action(_('Plotting data, please wait ...'))
+    def _plot_1d_array(self, unused):
+        index = self._vtgui.dbs_tree_view.currentIndex()
+        leaf = plugin_utils.getSelectedLeaf()
+        plot_window = SinglePlot(parent=self._mdiarea, index=index,
+                                 leafs=[leaf])
+        self._mdiarea.addSubWindow(plot_window)
+        plot_window.show()
+        
