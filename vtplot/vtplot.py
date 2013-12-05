@@ -178,7 +178,7 @@ class VTPlot(qtcore.QObject):
         if not self._is_dimesionality_of_selection(1):
             return
         # create layout and plot
-        layout = qtgraph.GraphicsLayoutWidget()
+        layout = qtgraph.GraphicsLayoutWidget(parent=self._vtgui)
         label = qtgraph.LabelItem(justify='left')
         layout.addItem(label, row=0, col=0)
         zoom_plot = layout.addPlot(row=1, col=0)
