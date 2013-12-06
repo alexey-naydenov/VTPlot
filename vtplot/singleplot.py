@@ -28,8 +28,9 @@ import PyQt4.QtCore as qtcore
 import tables
 import pyqtgraph as qtgraph
 
-import vitables.plugin_utils as vtpu
+import vitables.plugin_utils as plugin_utils
 from vitables.plugins.vtplot import plotutils
+from vitables.plugins.vtplot.infoframe import InfoFrame
 
 _STATISTICS_WIDTH = 10 # units of fonts symbol 'm'
 
@@ -38,7 +39,7 @@ class SinglePlot(qtgui.QMdiSubWindow):
     def __init__(self, parent=None, index=None, leafs=None):
         super(SinglePlot, self).__init__(parent)
         # store some vars
-        self._vtgui = vtpu.getVTGui()
+        self._vtgui = plugin_utils.getVTGui()
         self._leafs = leafs if leafs else []
         # stuff that vitables looks for
         self.dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(index)
@@ -52,16 +53,15 @@ class SinglePlot(qtgui.QMdiSubWindow):
         self._splitter = qtgui.QSplitter(parent=self.parent(),
                                          orientation=qtcore.Qt.Horizontal)
         self._plot = qtgraph.PlotWidget(parent=self._splitter, background='w')
-        self._text = qtgui.QTextEdit(self._splitter)
+        self._info = InfoFrame(parent=self._splitter)
         # setup plot
         for leaf, color in zip(self._leafs, 
                                itertools.cycle(plotutils.PLOT_COLORS)):
             self._plot.plot(leaf, pen=color)
-        # setup text
-        self._text.setReadOnly(True)
-        self._text.setFixedWidth(_STATISTICS_WIDTH
-                                 *self._text.fontMetrics().width('m'))
+        plotutils.set_window_title(self, self._leafs)
+        # signals and slots
+        self._cross_proxy = plotutils.add_crosshair_to(self._plot)
         # combine objects
         self._splitter.addWidget(self._plot)
-        self._splitter.addWidget(self._text)
+        self._splitter.addWidget(self._info)
         self.setWidget(self._splitter)

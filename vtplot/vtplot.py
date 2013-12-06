@@ -37,6 +37,7 @@ from vitables.plugins.vtplot import defaults
 from vitables.plugins.vtplot import about_page
 from vitables.plugins.vtplot import dataplot
 from vitables.plugins.vtplot.singleplot import SinglePlot
+from vitables.plugins.vtplot import plotutils
 
 __author__ = defaults.AUTHOR
 __version__ = defaults.VERSION
@@ -221,10 +222,9 @@ class VTPlot(qtcore.QObject):
 
     @plugin_utils.long_action(_('Plotting data, please wait ...'))
     def _plot_1d_array(self, unused):
-        index = self._vtgui.dbs_tree_view.currentIndex()
-        leaf = plugin_utils.getSelectedLeaf()
-        plot_window = SinglePlot(parent=self._mdiarea, index=index,
-                                 leafs=[leaf])
+        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
+        leafs = plotutils.getSelectedLeafs()
+        plot_window = SinglePlot(parent=self._mdiarea, index=index, leafs=leafs)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
         
