@@ -23,7 +23,9 @@
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
+import vitables.plugin_utils as plugin_utils
 import vitables.plugins.vtplot as vtp
+from vitables.plugins.vtplot import defaults
 
 def _(s):
     return qtgui.QApplication.translate(vtp.defaults.MODULE_NAME, s)
@@ -58,6 +60,7 @@ class InfoFrame(qtgui.QFrame):
     def __init__(self, parent, info_groups=None, entries=None):
         super(InfoFrame, self).__init__(parent)
         info_groups = info_groups if info_groups else self.DEFAULT_INFO_GROUPS
+        self._logger = plugin_utils.getLogger(defaults.PLUGIN_NAME)
         # layout and group boxes
         layout = qtgui.QVBoxLayout()
         self._groups = []
@@ -83,8 +86,14 @@ class InfoFrame(qtgui.QFrame):
         # set whole width
         set_edits_to_content(self._group_edits)
 
-    def _update_entries(self, entries):
+    def _update_entries(self, texts):
         """Update labes in groups with new info."""
-        for entry, text_edit in zip(entries, self._group_edits):
-            text_edit.setHtml(entry)
-            
+        for index, text in enumerate(texts):
+            self.update_entry(index, text)
+
+    def update_entry(self, index, text):
+        if index >= len(self._group_edits):
+            self._logger.error('text edit index out of range')
+        self._group_edits[index].setHtml(text)
+        set_edits_to_content(self._group_edits)
+        
