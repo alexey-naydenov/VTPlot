@@ -30,7 +30,7 @@ from vitables.plugins.vtplot import defaults
 def _(s):
     return qtgui.QApplication.translate(vtp.defaults.MODULE_NAME, s)
 
-_DEFAULT_TEXT_PADDING = 5 # in units of average char width
+_DEFAULT_TEXT_PADDING = 10 # in units of average char width
 
 def set_edits_to_content(edits, text_padding=_DEFAULT_TEXT_PADDING):
     """Change size of text edits to their content.
@@ -49,12 +49,11 @@ def set_edits_to_content(edits, text_padding=_DEFAULT_TEXT_PADDING):
     # set sizes, empty = one line spacing
     for e, s in zip(edits, text_sizes):
         line_spacing = e.fontMetrics().lineSpacing()
-        height = s.height() + line_spacing
+        height = s.height() + 1.3*line_spacing # should not have to add this
         e.setFixedSize(qtcore.QSize(common_width, height))
 
 class InfoFrame(qtgui.QFrame):
     """Information frame with cursor position and statistics."""
-    DEFAULT_WIDTH = 10
     DEFAULT_INFO_GROUPS = [_('Position'), _('Value'), _('Statistics')]
     
     def __init__(self, parent, info_groups=None, entries=None):
@@ -83,6 +82,7 @@ class InfoFrame(qtgui.QFrame):
         # labels
         entries = entries if entries else []
         self._update_entries(entries)
+        self.fit_content()
         # set whole width
         set_edits_to_content(self._group_edits)
 
@@ -95,5 +95,7 @@ class InfoFrame(qtgui.QFrame):
         if index >= len(self._group_edits):
             self._logger.error('text edit index out of range')
         self._group_edits[index].setHtml(text)
+
+    def fit_content(self):
         set_edits_to_content(self._group_edits)
         

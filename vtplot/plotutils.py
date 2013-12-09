@@ -65,6 +65,15 @@ def add_crosshair_to(plot):
                                 slot=move_crosshair)
     return proxy # proxy must persist with the plot
 
+def get_data_item_color(data_item):
+    return data_item.curve.opts['pen'].color().name()
+
+def get_data_item_value(data_item, position):
+    index = int(position + 0.5)
+    if index < 0 or index >= len(data_item.yData):
+        return 0
+    return data_item.yData[index]
+
 def getDBsTreeView():
     return plugin_utils.getVTGui().dbs_tree_view
 
@@ -76,3 +85,4 @@ def getSelectedLeafs():
     leafs = [plugin_utils.getDBsTreeModel().nodeFromIndex(index).node 
              for index in indixes]
     return leafs
+
