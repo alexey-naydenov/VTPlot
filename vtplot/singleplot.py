@@ -32,7 +32,7 @@ import vitables.plugin_utils as plugin_utils
 from vitables.plugins.vtplot import plotutils
 from vitables.plugins.vtplot.infoframe import InfoFrame
 
-_STATISTICS_WIDTH = 10 # units of fonts symbol 'm'
+_MINIMUM_WIDTH = 800 # minimum window width
 
 class SinglePlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
@@ -50,10 +50,15 @@ class SinglePlot(qtgui.QMdiSubWindow):
         self._init_gui()
 
     def _init_gui(self):
+        self.setMinimumWidth(_MINIMUM_WIDTH)
         self._splitter = qtgui.QSplitter(parent=self.parent(),
                                          orientation=qtcore.Qt.Horizontal)
         self._plot = qtgraph.PlotWidget(parent=self._splitter, background='w')
-        self._info = InfoFrame(parent=self._splitter)
+        self._info = InfoFrame(parent=self._splitter, 
+                               entries=['x = 0.0<br/>y = 0.0'])
+        # only stretch plot window
+        self._splitter.setStretchFactor(0, 1)
+        self._splitter.setStretchFactor(1, 0)
         # setup plot
         for leaf, color in zip(self._leafs, 
                                itertools.cycle(plotutils.PLOT_COLORS)):
