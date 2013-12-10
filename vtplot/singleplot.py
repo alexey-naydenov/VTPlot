@@ -21,11 +21,12 @@
 """Mdi subwindow with single plot with some tools."""
 
 import itertools
-import functools
+import functools as ft
 
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
+import numpy as np
 import tables
 import pyqtgraph as qtgraph
 
@@ -36,45 +37,48 @@ from vitables.plugins.vtplot.infoframe import InfoFrame
 _MINIMUM_WIDTH = 800 # minimum window width
 _MINIMUM_HEIGHT = 600 # minimum window height
 
-_LEGEND_LINE = "<span style='color: {color}'>{name} = {value:.3g}</span>"
+_POSITION_GROUP = 'position'
+_VALUE_GROUP = 'value'
 
 def _templates_to_text(template_list, **kwargs):
     return '<br/>'.join([t.format(**kwargs) for t in template_list])
 
 class SinglePlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
-
-    _STATISTICS_TEMPLATES = ['min = {min_}', 'max = {max_}', 
-                             'mean = {mean}', 'var = {var}']
-    _POSITION_INDEX = 0
-    _VALUES_INDEX = 1
-    _STATISTICS_INDEX = 2
-
+    _STAT_FUNCTION_DICT = {'min': np.amin, 'mean': np.mean, 'max': np.amax, 
+                           'std': np.std}
     def __init__(self, parent=None, index=None, leafs=None):
         super(SinglePlot, self).__init__(parent)
+        # things to display on the right
+        self._stat_groups = ['max', 'mean', 'std', 'min']
+        self._displayed_groups = [_POSITION_GROUP, _VALUE_GROUP] \
+                                 + self._stat_groups
         # store some vars
-        self._vtgui = plugin_utils.getVTGui()
         self._leafs = leafs if leafs else []
         self._value_names = [l.name for l in self._leafs]
         # stuff that vitables looks for
-        self.dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(index)
+        self.dbt_leaf = plugin_utils.getVTGui().dbs_tree_model.nodeFromIndex(index)
         self.pindex = qtcore.QPersistentModelIndex(index)
         self.is_context_menu_custom = True
         # gui init stuff
         self.setAttribute(qtcore.Qt.WA_DeleteOnClose)
         self._init_gui()
         # set text edits with some stuff and adjust their size
-        self._update_position_info()
+        plotutils.update_position_info(self._plot, self._info, _POSITION_GROUP)
         self._update_values_info()
         self._update_statistics_info()
         self._info.fit_content()
         # signal slots
         self._mouse_position_proxy = qtgraph.SignalProxy(
-            self._plot.scene().sigMouseMoved, rateLimit=60,
-            slot=self._update_position_info)
+            self._plot.scene().sigMouseMoved, rateLimit=30,
+            slot=ft.partial(plotutils.update_position_info, self._plot, 
+                            self._info, _POSITION_GROUP))
         self._mouse_value_proxy = qtgraph.SignalProxy(
-            self._plot.scene().sigMouseMoved, rateLimit=60,
+            self._plot.scene().sigMouseMoved, rateLimit=10,
             slot=self._update_values_info)
+        self._range_change_proxy = qtgraph.SignalProxy(
+            self._plot.sigRangeChanged, rateLimit=10,
+            slot=self._update_statistics_info)
 
     def _init_gui(self):
         """Create gui elements"""
@@ -83,7 +87,8 @@ class SinglePlot(qtgui.QMdiSubWindow):
         self._splitter = qtgui.QSplitter(parent=self.parent(),
                                          orientation=qtcore.Qt.Horizontal)
         self._plot = qtgraph.PlotWidget(parent=self._splitter, background='w')
-        self._info = InfoFrame(parent=self._splitter)
+        self._info = InfoFrame(parent=self._splitter, 
+                               info_groups=self._displayed_groups)
         # only stretch plot window
         self._splitter.setStretchFactor(0, 1)
         self._splitter.setStretchFactor(1, 0)
@@ -99,31 +104,14 @@ class SinglePlot(qtgui.QMdiSubWindow):
         self._splitter.addWidget(self._info)
         self.setWidget(self._splitter)
 
-    def _mouse_event_to_coordinates(self, event):
-        """Convert proxy event into x, y coordinates."""
-        # signal proxy turns original arguments into a tuple
-        position = event[0] 
-        view_box = self._plot.getViewBox()
-        if not view_box.sceneBoundingRect().contains(position):
-            return None, None
-        mouse_point = view_box.mapSceneToView(position)
-        return mouse_point.x(), mouse_point.y()
-
-    def _update_position_info(self, event=None):
-        """Update the position text edit on mouse move event.
-
-        Uses signal proxy to reduce number of events.
-        """
-        if event:
-            x, y = self._mouse_event_to_coordinates(event)
-            if not x:
-                return
-        else:
-            x, y = 0, 0
-        legend = [
-            _LEGEND_LINE.format(color='black', name='x', value=x),
-            _LEGEND_LINE.format(color='black', name='y', value=y)]
-        self._info.update_entry(self._POSITION_INDEX, '<br/>'.join(legend))
+    def _update_info(self, info_name, values):
+        colors = [plotutils.get_data_item_color(di) 
+                  for di in self._plot.listDataItems()]
+        legend = []
+        for value, name, color in zip(values, self._value_names, colors):
+            legend.append(plotutils.LEGEND_LINE.format(name=name, value=value, 
+                                              color=color))
+        self._info.update_entry(info_name, '<br/>'.join(legend))
 
     def _update_values_info(self, event=None):
         """Update info text on mouse move event.
@@ -131,26 +119,22 @@ class SinglePlot(qtgui.QMdiSubWindow):
         Uses proxy to reduce number of events.
         """
         if event:
-            x, y = self._mouse_event_to_coordinates(event)
+            x, y = plotutils.mouse_event_to_coordinates(self._plot, event)
             if not x:
                 return
             values = [plotutils.get_data_item_value(di, x)
                       for di in self._plot.listDataItems()]
         else:
             values = len(self._plot.listDataItems())*[0.0]
-        colors = [plotutils.get_data_item_color(di) 
-                  for di in self._plot.listDataItems()]
-        legend = []
-        for value, name, color in zip(values, self._value_names, colors):
-            legend.append(_LEGEND_LINE.format(name=name, value=value, 
-                                              color=color))
-        self._info.update_entry(self._VALUES_INDEX,
-                                '<br/>'.join(legend))
+        self._update_info(_VALUE_GROUP, values)
 
 
-    def _update_statistics_info(self, min_=0, max_=0, mean=0, var=0):
+    def _update_statistics_info(self, unused=None):
         """Update the statistics text edit on the info pane."""
-        self._info.update_entry(
-            self._STATISTICS_INDEX,
-            _templates_to_text(self._STATISTICS_TEMPLATES, min_=0, max_=0,
-                               mean=0, var=0))
+        x_range = self._plot.viewRange()[0]
+        for stat_name in self._stat_groups:
+            stat_values = plotutils.calculate_statistics(
+                plot=self._plot, function=self._STAT_FUNCTION_DICT[stat_name],
+                range_=x_range)
+            self._update_info(stat_name, stat_values)
+

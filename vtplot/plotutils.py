@@ -25,6 +25,7 @@ import collections
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
+import numpy as np
 import tables
 import pyqtgraph as qtgraph
 
@@ -32,6 +33,7 @@ from vitables import utils as vtutils
 from vitables import plugin_utils
 
 PLOT_COLORS = ['b', 'r', 'g', 'c', 'm', 'y']
+LEGEND_LINE = "<span style='color: {color}'>{name}</span> = {value:.3g}"
 
 def to_list(stuff):
     if stuff is None:
@@ -86,3 +88,41 @@ def getSelectedLeafs():
              for index in indixes]
     return leafs
 
+def mouse_event_to_coordinates(plot, event):
+    """Convert proxy event into x, y coordinates.
+
+    event is received from signal proxy.
+    """
+    # signal proxy turns original arguments into a tuple
+    position = event[0] 
+    view_box = plot.getViewBox()
+    if not view_box.sceneBoundingRect().contains(position):
+        return None, None
+    mouse_point = view_box.mapSceneToView(position)
+    return mouse_point.x(), mouse_point.y()
+
+def update_position_info(plot, info_pane, position_name, event=None):
+    """Update the position text edit on mouse move event.
+
+    Uses signal proxy to reduce number of events.
+    """
+    if event:
+        x, y = mouse_event_to_coordinates(plot, event)
+        if not x:
+            return
+    else:
+        x, y = 0, 0
+    legend = [
+        LEGEND_LINE.format(color='black', name='x', value=x),
+        LEGEND_LINE.format(color='black', name='y', value=y)]
+    info_pane.update_entry(position_name, '<br/>'.join(legend))
+
+def calculate_statistics(plot, function, range_):
+    stats = []
+    for di in plot.listDataItems():
+        index_range = np.searchsorted(di.xData, range_)
+        if index_range[0] == index_range[1]:
+            stats.append(float('nan'))
+        else:
+            stats.append(function(di.yData[index_range[0]:index_range[1]]))
+    return stats

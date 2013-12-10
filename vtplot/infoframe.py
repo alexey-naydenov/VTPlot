@@ -54,48 +54,37 @@ def set_edits_to_content(edits, text_padding=_DEFAULT_TEXT_PADDING):
 
 class InfoFrame(qtgui.QFrame):
     """Information frame with cursor position and statistics."""
-    DEFAULT_INFO_GROUPS = [_('Position'), _('Value'), _('Statistics')]
+    DEFAULT_INFO_GROUPS = ['position', 'value', 'min', 'mean', 'max', 'var']
     
-    def __init__(self, parent, info_groups=None, entries=None):
+    def __init__(self, parent, info_groups=None):
         super(InfoFrame, self).__init__(parent)
         info_groups = info_groups if info_groups else self.DEFAULT_INFO_GROUPS
         self._logger = plugin_utils.getLogger(defaults.PLUGIN_NAME)
         # layout and group boxes
         layout = qtgui.QVBoxLayout()
-        self._groups = []
-        self._group_layouts = []
-        self._group_edits = []
+        self._name_display_dict = {}
+        self._group_boxes = []
         for group_name in info_groups:
-            group_box = qtgui.QGroupBox(parent=self, title=group_name)
+            group_box = qtgui.QGroupBox(parent=self, 
+                                        title=_(group_name).capitalize())
+            self._group_boxes.append(group_box)
             layout.addWidget(group_box)
-            self._groups.append(group_box)
             group_layout = qtgui.QVBoxLayout()
             group_box.setLayout(group_layout)
-            self._group_layouts.append(group_layout)
             group_text = qtgui.QTextEdit()
             group_text.setReadOnly(True)
             group_layout.addWidget(group_text)
             group_layout.addStretch()
-            self._group_edits.append(group_text)
+            self._name_display_dict[group_name] = group_text
         layout.addStretch()
         self.setLayout(layout)
-        # labels
-        entries = entries if entries else []
-        self._update_entries(entries)
-        self.fit_content()
-        # set whole width
-        set_edits_to_content(self._group_edits)
 
-    def _update_entries(self, texts):
-        """Update labes in groups with new info."""
-        for index, text in enumerate(texts):
-            self.update_entry(index, text)
-
-    def update_entry(self, index, text):
-        if index >= len(self._group_edits):
-            self._logger.error('text edit index out of range')
-        self._group_edits[index].setHtml(text)
+    def update_entry(self, name, text):
+        if name not in self._name_display_dict:
+            self._logger.error('{0} is not a info element'.format(name))
+        self._name_display_dict[name].setHtml(text)
 
     def fit_content(self):
-        set_edits_to_content(self._group_edits)
-        
+        set_edits_to_content(self._name_display_dict.values())
+        for g in self._group_boxes:
+            g.adjustSize()
