@@ -36,7 +36,8 @@ from vitables import plugin_utils
 from vitables.plugins.vtplot import defaults
 from vitables.plugins.vtplot import about_page
 from vitables.plugins.vtplot import dataplot
-from vitables.plugins.vtplot.singleplot import SinglePlot
+from vitables.plugins.vtplot import singleplot
+from vitables.plugins.vtplot import dualplot
 from vitables.plugins.vtplot import plotutils
 
 __author__ = defaults.AUTHOR
@@ -145,7 +146,7 @@ class VTPlot(qtcore.QObject):
                           shortcut=qtgui.QKeySequence.UnknownKey,
                           statusTip=_('Plot an array.')),
             qtgui.QAction(_('Dual plot'), self, 
-                          triggered=self._plot_large_1d_array,
+                          triggered=self._plot_1d_array_with_zoom,
                           shortcut=qtgui.QKeySequence.UnknownKey,
                           statusTip=_('Plot long array.'))
         ]
@@ -221,10 +222,21 @@ class VTPlot(qtcore.QObject):
         window.show()
 
     @plugin_utils.long_action(_('Plotting data, please wait ...'))
+    def _plot_1d_array_with_zoom(self, unused):
+        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
+        leafs = plotutils.getSelectedLeafs()
+        plot_window = dualplot.DualPlot(parent=self._mdiarea, 
+                                        index=index, leafs=leafs)
+        self._mdiarea.addSubWindow(plot_window)
+        plot_window.show()
+
+
+    @plugin_utils.long_action(_('Plotting data, please wait ...'))
     def _plot_1d_array(self, unused):
         index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
         leafs = plotutils.getSelectedLeafs()
-        plot_window = SinglePlot(parent=self._mdiarea, index=index, leafs=leafs)
+        plot_window = singleplot.SinglePlot(parent=self._mdiarea,
+                                            index=index, leafs=leafs)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
         
