@@ -83,7 +83,8 @@ class SinglePlot(qtgui.QMdiSubWindow):
         self.setMinimumHeight(_MINIMUM_HEIGHT)
         self._splitter = qtgui.QSplitter(parent=self.parent(),
                                          orientation=qtcore.Qt.Horizontal)
-        self._plot = qtgraph.PlotWidget(parent=self._splitter, background='w')
+        self._graphics_layout = qtgraph.GraphicsLayoutWidget()
+        self._plot = self._graphics_layout.addPlot(row=0, col=0)
         self._info = InfoFrame(parent=self._splitter, 
                                info_groups=self._displayed_groups)
         # only stretch plot window
@@ -97,7 +98,7 @@ class SinglePlot(qtgui.QMdiSubWindow):
         # signals and slots
         self._cross_proxy = plotutils.add_crosshair_to(self._plot)
         # combine objects
-        self._splitter.addWidget(self._plot)
+        self._splitter.addWidget(self._graphics_layout)
         self._splitter.addWidget(self._info)
         self.setWidget(self._splitter)
 
