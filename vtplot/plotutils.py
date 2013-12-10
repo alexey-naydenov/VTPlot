@@ -33,7 +33,7 @@ from vitables import utils as vtutils
 from vitables import plugin_utils
 
 PLOT_COLORS = ['b', 'r', 'g', 'c', 'm', 'y']
-LEGEND_LINE = "<span style='color: {color}'>{name}</span> = {value:.3g}"
+LEGEND_LINE = "<span style='color: {color}'>{name}</span> = {value:.5g}"
 
 def to_list(stuff):
     if stuff is None:

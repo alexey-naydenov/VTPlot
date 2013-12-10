@@ -40,9 +40,6 @@ _MINIMUM_HEIGHT = 600 # minimum window height
 _POSITION_GROUP = 'position'
 _VALUE_GROUP = 'value'
 
-def _templates_to_text(template_list, **kwargs):
-    return '<br/>'.join([t.format(**kwargs) for t in template_list])
-
 class SinglePlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
     _STAT_FUNCTION_DICT = {'min': np.amin, 'mean': np.mean, 'max': np.amax, 
