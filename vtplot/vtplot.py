@@ -155,6 +155,7 @@ class VTPlot(qtcore.QObject):
             self._submenu.addAction(action)
 
         plugin_utils.addToMenuBar(self._submenu)
+        plugin_utils.addToLeafContextMenu(actions)
 
     def _do_nothing(self):
         """Test plug that logs a message."""

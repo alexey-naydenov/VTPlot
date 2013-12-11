@@ -135,4 +135,9 @@ class SinglePlot(qtgui.QMdiSubWindow):
                 plot=self._plot, function=self._STAT_FUNCTION_DICT[stat_name],
                 range_=x_range)
             self._update_info(stat_name, stat_values)
+        self.on_range_changed(x_range)
+
+    def on_range_changed(self, range_):
+        """Place holder for child to redefine."""
+        pass
 

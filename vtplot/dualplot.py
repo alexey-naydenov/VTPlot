@@ -57,7 +57,6 @@ class DualPlot(singleplot.SinglePlot):
 
     def _connect_zoom_region_and_plot(self):
         self._zoom_region.sigRegionChanged.connect(self._sync_plot_to_region)
-        self._plot.sigRangeChanged.connect(self._sync_region_to_plot)
         if self._leafs: # plot might be is empty
             data_length = self._leafs[0].shape[0]
             max_len = min(1000, data_length)
@@ -70,6 +69,7 @@ class DualPlot(singleplot.SinglePlot):
         # other on change
         self._plot.setXRange(min_x, max_x, padding=0)
 
-    def _sync_region_to_plot(self, view_range):
-        rgn = view_range[0]
-        self._zoom_region.setRegion(rgn)
+    def on_range_changed(self, range_):
+        # this handler can be called before _add_zoom_region is called
+        if hasattr(self, '_zoom_region'):
+            self._zoom_region.setRegion(range_)
