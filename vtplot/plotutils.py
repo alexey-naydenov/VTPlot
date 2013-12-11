@@ -88,6 +88,22 @@ def getSelectedLeafs():
              for index in indixes]
     return leafs
 
+def addToLeafContextMenu(actions, enable_function=None):
+    """Add entries at the end of the leaf context menu.
+
+    The function accept a QAction/QMenu or an iterable. Entries will be
+    preceded with a separator and added at the end of the menu.
+
+    :parameter actions: QAction/QMenu object or a list of such objects
+
+    :return: None
+    """
+
+    context_menu = plugin_utils.getVTGui().leaf_node_cm
+    plugin_utils.addToMenu(context_menu, actions)
+    if enable_function:
+        context_menu.aboutToShow.connect(enable_function)
+
 def mouse_event_to_coordinates(plot, event):
     """Convert proxy event into x, y coordinates.
 

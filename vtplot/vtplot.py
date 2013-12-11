@@ -140,7 +140,7 @@ class VTPlot(qtcore.QObject):
 
     def _add_submenu(self):
         """Add submenu with plot actions."""
-        actions = [
+        self._array_actions = [
             qtgui.QAction(_('Plot'), self, 
                           triggered=self._plot_1d_array,
                           shortcut=qtgui.QKeySequence.UnknownKey,
@@ -151,12 +151,22 @@ class VTPlot(qtcore.QObject):
                           statusTip=_('Plot long array.'))
         ]
         self._submenu = qtgui.QMenu(_(defaults.MENU_NAME))
-        for action in actions:
+        for action in self._array_actions:
             self._submenu.addAction(action)
-
+        # add to menus
         plugin_utils.addToMenuBar(self._submenu)
-        plugin_utils.addToLeafContextMenu(actions)
-
+        plotutils.addToLeafContextMenu(self._array_actions, 
+                                       self._enable_for_arrays)
+        
+    def _enable_for_arrays(self):
+        enabled = True
+        for leaf in plotutils.getSelectedLeafs():
+             if len(leaf.shape) != 1:
+                 enabled = False
+                 break
+        for action in self._array_actions:
+            action.setEnabled(enabled)
+        
     def _do_nothing(self):
         """Test plug that logs a message."""
         self._logger.debug('Doing nothing')
