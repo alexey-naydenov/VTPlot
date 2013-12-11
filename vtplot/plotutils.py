@@ -73,7 +73,7 @@ def get_data_item_color(data_item):
 def get_data_item_value(data_item, position):
     index = int(position + 0.5)
     if index < 0 or index >= len(data_item.yData):
-        return 0
+        return float('nan')
     return data_item.yData[index]
 
 def getDBsTreeView():

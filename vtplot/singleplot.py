@@ -123,7 +123,7 @@ class SinglePlot(qtgui.QMdiSubWindow):
             values = [plotutils.get_data_item_value(di, x)
                       for di in self._plot.listDataItems()]
         else:
-            values = len(self._plot.listDataItems())*[0.0]
+            values = len(self._plot.listDataItems())*[float('nan')]
         self._update_info(_VALUE_GROUP, values)
 
 
