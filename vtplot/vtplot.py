@@ -50,75 +50,6 @@ comment = defaults.COMMENT
 def _(s):
     return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
 
-PLOT_COLORS = ['b', 'r', 'g', 'c', 'm', 'y']
-
-def sync_plot_to_region(plot, region, other):
-    region.setZValue(10)
-    minX, maxX = region.getRegion()
-    # padding = 0 is important because range and plot update each other on
-    # change
-    plot.setXRange(minX, maxX, padding=0)
-
-def sync_region_to_plot(region, window, view_range):
-    rgn = view_range[0]
-    region.setRegion(rgn)
-
-def move_crosshair(view_box, vertical_line, horizontal_line, event):
-    """Move crosshair on mouse event, use with SignalProxy."""
-    position = event[0]  # signal proxy turns original arguments into a tuple
-    if not view_box.sceneBoundingRect().contains(position):
-        return
-    mouse_point = view_box.mapSceneToView(position)
-    vertical_line.setPos(mouse_point.x())
-    horizontal_line.setPos(mouse_point.y())
-
-def add_crosshair_to(plot):
-    """Connect mouse move to drawing crosshair on plot."""
-    vertical_line = qtgraph.InfiniteLine(angle=90, movable=False)
-    horizontal_line = qtgraph.InfiniteLine(angle=0, movable=False)
-    plot.addItem(vertical_line, ignoreBounds=True)
-    plot.addItem(horizontal_line, ignoreBounds=True)
-    proxy = qtgraph.SignalProxy(
-        plot.scene().sigMouseMoved, rateLimit=60, 
-        slot=functools.partial(move_crosshair, plot.getViewBox(), 
-                               vertical_line, horizontal_line))
-    plot.crosshair_proxy = proxy # proxy must persist with the plot
-
-def get_data_item_color(data_item):
-    return data_item.curve.opts['pen'].color().name()
-
-def get_data_item_value(data_item, position):
-    index = int(position + 0.5)
-    if index < 0 or index >= len(data_item.yData):
-        return 0
-    return data_item.yData[index]
-
-LEGEND_LINE = "<span style='color: {color}'>{name} = {value:.3g}</span>"
-def update_value_legend(plot_item, label, event):
-    """Display data values at x cursor position, use with SignalProxy."""
-    position = event[0]  # signal proxy turns original arguments into a tuple
-    view_box = plot_item.getViewBox()
-    if not view_box.sceneBoundingRect().contains(position):
-        return
-    mouse_point = view_box.mapSceneToView(position)
-    legend = [
-        LEGEND_LINE.format(color='black', name='x', value=mouse_point.x()),
-        LEGEND_LINE.format(color='black', name='y', value=mouse_point.y())]
-    for i, di in enumerate(plot_item.listDataItems()):
-        if di.yData is None:
-            continue
-        legend.append(LEGEND_LINE.format(
-            color=get_data_item_color(di), name='y' + str(i+1),
-            value=get_data_item_value(di, mouse_point.x())))
-    label.setText('<br/>'.join(legend))
-
-def add_legend_with_values_to(plot, label):
-    """Show legend with data values under cursor."""
-    proxy = qtgraph.SignalProxy(
-        plot.scene().sigMouseMoved, rateLimit=60,
-        slot=functools.partial(update_value_legend, plot, label))
-    plot.data_values_proxy = proxy # proxy must persist with the plot
-    
 class VTPlot(qtcore.QObject):
     """Main plugin class for all plotting stuff."""
 
@@ -159,6 +90,7 @@ class VTPlot(qtcore.QObject):
         plotutils.addToLeafContextMenu(self._array_actions, 
                                        self._enable_for_arrays)
         
+
     def _enable_for_arrays(self):
         """Enable array plots only if all selected objects are 1d arrays."""
         enabled = True
@@ -168,29 +100,7 @@ class VTPlot(qtcore.QObject):
                 break
         for action in self._array_actions:
             action.setEnabled(enabled)
-        
-    def _do_nothing(self):
-        """Test plug that logs a message."""
-        self._logger.debug('Doing nothing')
 
-    def _set_to_plot_name(self, window):
-        """Change window title to current leaf name."""
-        window.setWindowTitle('Dual plot - '
-                              + plugin_utils.getSelectedLeaf().name)
-
-    def _is_dimesionality_of_selection(self, dimensions_count):
-        """Check if selected object is a leav and has right dimentsionality."""
-        current = self._vtgui.dbs_tree_view.currentIndex()
-        dbt_leaf = self._vtgui.dbs_tree_model.nodeFromIndex(current)
-        if not isinstance(dbt_leaf.node, tables.Leaf):
-            self._logger.error(_('Selected object is not an array'))
-            return False
-        if len(dbt_leaf.node.shape) != dimensions_count:
-            self._logger.error(_('Selected object does not have the right '
-                                 'number of dimensions'))
-            return False
-        else:
-            return True
 
     @plugin_utils.long_action(_('Plotting data, please wait ...'))
     def _plot_1d_array_with_zoom(self, unused):
