@@ -51,7 +51,7 @@ def _(s):
     return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
 
 class VTPlot(qtcore.QObject):
-    """Main plugin class for all plotting stuff."""
+    """Plugin class for interaction with the main program."""
 
     def __init__(self):
         super(VTPlot, self).__init__()
@@ -65,9 +65,11 @@ class VTPlot(qtcore.QObject):
         qtgraph.setConfigOption('background', 'w')
         qtgraph.setConfigOption('foreground', 'k')
 
+
     def helpAbout(self, parent):
         self._about_page = about_page.AboutPage(parent)
         return self._about_page
+
 
     def _add_submenu(self):
         """Add submenu with plot actions."""

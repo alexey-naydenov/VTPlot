@@ -33,6 +33,7 @@ from vitables.plugins.vtplot import singleplot
 
 
 class DualPlot(singleplot.SinglePlot):
+    """Display additional plot with overall data view."""
     def __init__(self, *args, **kwargs):
         super(DualPlot, self).__init__(*args, **kwargs)
         # whether to auto-range only to the visible portion of a plot
@@ -70,6 +71,6 @@ class DualPlot(singleplot.SinglePlot):
         self._plot.setXRange(min_x, max_x, padding=0)
 
     def on_range_changed(self, range_):
-        # this handler can be called before _add_zoom_region is called
+        # this handler may be called before _add_zoom_region is called
         if hasattr(self, '_zoom_region'):
             self._zoom_region.setRegion(range_)
