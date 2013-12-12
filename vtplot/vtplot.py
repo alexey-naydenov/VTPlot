@@ -155,10 +155,12 @@ class VTPlot(qtcore.QObject):
             self._submenu.addAction(action)
         # add to menus
         plugin_utils.addToMenuBar(self._submenu)
+        self._submenu.aboutToShow.connect(self._enable_for_arrays)
         plotutils.addToLeafContextMenu(self._array_actions, 
                                        self._enable_for_arrays)
         
     def _enable_for_arrays(self):
+        """Enable or disable array actions menu depending on selection."""
         enabled = True
         for leaf in plotutils.getSelectedLeafs():
              if len(leaf.shape) != 1:

@@ -98,8 +98,8 @@ def addToLeafContextMenu(actions, enable_function=None):
 
     :return: None
     """
-
-    context_menu = plugin_utils.getVTGui().leaf_node_cm
+    vtgui = plugin_utils.getVTGui()
+    context_menu = vtgui.leaf_node_cm
     plugin_utils.addToMenu(context_menu, actions)
     if enable_function:
         context_menu.aboutToShow.connect(enable_function)
