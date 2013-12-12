@@ -22,16 +22,23 @@
 
 import os
 import sys
+import functools
 
-from PyQt4 import QtGui
-from PyQt4 import QtCore
+import PyQt4.QtGui as qtgui
+import PyQt4.QtCore as qtcore
+
+import tables
+import pyqtgraph as qtgraph
 
 from vitables import utils as vtutils
-from vitables import vtSite
 from vitables import plugin_utils
 
 from vitables.plugins.vtplot import defaults
 from vitables.plugins.vtplot import about_page
+from vitables.plugins.vtplot import dataplot
+from vitables.plugins.vtplot import singleplot
+from vitables.plugins.vtplot import dualplot
+from vitables.plugins.vtplot import plotutils
 
 __author__ = defaults.AUTHOR
 __version__ = defaults.VERSION
@@ -41,37 +48,80 @@ plugin_name = defaults.PLUGIN_NAME
 comment = defaults.COMMENT
 
 def _(s):
-    return QtGui.QApplication.translate(defaults.MODULE_NAME, s)
+    return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
 
-class VTPlot(QtCore.QObject):
-    """Main plugin class for all plotting stuff."""
+class VTPlot(qtcore.QObject):
+    """Plugin class for interaction with the main program."""
 
     def __init__(self):
         super(VTPlot, self).__init__()
         
         self._vtgui = plugin_utils.getVTGui()
-        self._settings = QtCore.QSettings()
+        self._mdiarea = self._vtgui.workspace
+        self._settings = qtcore.QSettings()
         self._logger = plugin_utils.getLogger(defaults.MODULE_NAME)
-
         self._add_submenu()
+        # pyqtgraph options
+        qtgraph.setConfigOption('background', 'w')
+        qtgraph.setConfigOption('foreground', 'k')
+
 
     def helpAbout(self, parent):
         self._about_page = about_page.AboutPage(parent)
         return self._about_page
 
+
     def _add_submenu(self):
-        """Add submenu for map actions."""
-        self._submenu = QtGui.QMenu(_('Plot'))
-        actions = {}
-        actions['nothing'] = QtGui.QAction(
-            _('Nothing'), self, shortcut=QtGui.QKeySequence.UnknownKey,
-            triggered=self._do_nothing, statusTip=_('Nothing'))
-        self._submenu.addAction(actions['nothing'])
-
+        """Add submenu with plot actions."""
+        self._array_actions = [
+            qtgui.QAction(_('Plot'), self, 
+                          triggered=self._plot_1d_array,
+                          shortcut=qtgui.QKeySequence.UnknownKey,
+                          statusTip=_('Plot an array.')),
+            qtgui.QAction(_('Dual plot'), self, 
+                          triggered=self._plot_1d_array_with_zoom,
+                          shortcut=qtgui.QKeySequence.UnknownKey,
+                          statusTip=_('Plot long array.'))
+        ]
+        self._submenu = qtgui.QMenu(_(defaults.MENU_NAME))
+        for action in self._array_actions:
+            self._submenu.addAction(action)
+        # add to menus
         plugin_utils.addToMenuBar(self._submenu)
+        self._submenu.aboutToShow.connect(self._enable_for_arrays)
+        plotutils.addToLeafContextMenu(self._array_actions, 
+                                       self._enable_for_arrays)
+        
 
-        plugin_utils.addToLeafContextMenu(actions.values())
+    def _enable_for_arrays(self):
+        """Enable array plots only if all selected objects are 1d arrays."""
+        enabled = True
+        for leaf in plotutils.getSelectedLeafs():
+            if not isinstance(leaf, tables.array.Array) or len(leaf.shape) != 1:
+                enabled = False
+                break
+        for action in self._array_actions:
+            action.setEnabled(enabled)
 
-    def _do_nothing(self):
-        """Log a message."""
-        self._logger.debug('Doing nothing')
+
+    @plugin_utils.long_action(_('Plotting data, please wait ...'))
+    def _plot_1d_array_with_zoom(self, unused):
+        """Display two plots: overall view and zoomed to region."""
+        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
+        leafs = plotutils.getSelectedLeafs()
+        plot_window = dualplot.DualPlot(parent=self._mdiarea, 
+                                        index=index, leafs=leafs)
+        self._mdiarea.addSubWindow(plot_window)
+        plot_window.show()
+
+
+    @plugin_utils.long_action(_('Plotting data, please wait ...'))
+    def _plot_1d_array(self, unused):
+        """Display one plot with crosshair ad statistics."""
+        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
+        leafs = plotutils.getSelectedLeafs()
+        plot_window = singleplot.SinglePlot(parent=self._mdiarea,
+                                            index=index, leafs=leafs)
+        self._mdiarea.addSubWindow(plot_window)
+        plot_window.show()
+        

@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Some constants and default values for different things."""
+"""About page info and names used to register plugin."""
 
 import os.path
 
@@ -27,6 +27,7 @@ VERSION = '0.1'
 MODULE_NAME = 'vtplot'
 PLUGIN_CLASS = 'VTPlot'
 PLUGIN_NAME = 'vtplot'
-COMMENT = 'Plotting 1D and 2D graphs.'
+COMMENT = 'Plot 1D and 2D graphs.'
+MENU_NAME = 'Plot'
 
 FOLDER = os.path.join(os.path.dirname(__file__))
