@@ -160,12 +160,12 @@ class VTPlot(qtcore.QObject):
                                        self._enable_for_arrays)
         
     def _enable_for_arrays(self):
-        """Enable or disable array actions menu depending on selection."""
+        """Enable array plots only if all selected objects are 1d arrays."""
         enabled = True
         for leaf in plotutils.getSelectedLeafs():
-             if len(leaf.shape) != 1:
-                 enabled = False
-                 break
+            if not isinstance(leaf, tables.array.Array) or len(leaf.shape) != 1:
+                enabled = False
+                break
         for action in self._array_actions:
             action.setEnabled(enabled)
         
@@ -193,49 +193,8 @@ class VTPlot(qtcore.QObject):
             return True
 
     @plugin_utils.long_action(_('Plotting data, please wait ...'))
-    def _plot_large_1d_array(self, unused):
-        """Plot whole array along with zoomed in version."""
-        if not self._is_dimesionality_of_selection(1):
-            return
-        # create layout and plot
-        layout = qtgraph.GraphicsLayoutWidget()
-        label = qtgraph.LabelItem(justify='left')
-        label.setText(' ----------------------')
-        layout.addItem(label, row=1, col=1)
-        label.setFixedWidth(200)
-        zoom_plot = layout.addPlot(row=1, col=0)
-        whole_plot = layout.addPlot(row=2, col=0)
-        # setup plots
-        zoom_plot.setAutoVisible(y=True) # no idea what this does
-        add_crosshair_to(zoom_plot)
-        add_legend_with_values_to(zoom_plot, label)
-        region = qtgraph.LinearRegionItem(
-            orientation=qtgraph.LinearRegionItem.Vertical)
-        region.setZValue(10) # probably transparency
-        # Add the LinearRegionItem to the ViewBox, but tell the
-        # ViewBox to exclude this item when doing auto-range
-        # calculations.
-        whole_plot.addItem(region, ignoreBounds=True)
-        # plot data
-        leaf = plugin_utils.getSelectedLeaf()
-        zoom_plot.plot(leaf, pen=PLOT_COLORS[0])
-        whole_plot.plot(leaf, pen=PLOT_COLORS[0])
-        # connect signals between zoom_plot and region selection tool
-        region.sigRegionChanged.connect(
-            functools.partial(sync_plot_to_region, zoom_plot, region))
-        zoom_plot.sigRangeChanged.connect(
-            functools.partial(sync_region_to_plot, region))
-        max_len = min(1000, leaf.shape[0])
-        region.setRegion([0, max(max_len, 0.1*leaf.shape[0])])
-        # create and show plot window
-        index = self._vtgui.dbs_tree_view.currentIndex()
-        window = dataplot.DataPlot(self._mdiarea, index, layout)
-        self._set_to_plot_name(window)
-        self._mdiarea.addSubWindow(window)
-        window.show()
-
-    @plugin_utils.long_action(_('Plotting data, please wait ...'))
     def _plot_1d_array_with_zoom(self, unused):
+        """Display two plots: overall view and zoomed to region."""
         index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
         leafs = plotutils.getSelectedLeafs()
         plot_window = dualplot.DualPlot(parent=self._mdiarea, 
@@ -246,6 +205,7 @@ class VTPlot(qtcore.QObject):
 
     @plugin_utils.long_action(_('Plotting data, please wait ...'))
     def _plot_1d_array(self, unused):
+        """Display one plot with crosshair ad statistics."""
         index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
         leafs = plotutils.getSelectedLeafs()
         plot_window = singleplot.SinglePlot(parent=self._mdiarea,
