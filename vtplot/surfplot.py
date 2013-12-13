@@ -37,6 +37,8 @@ from vitables.plugins.vtplot.infoframe import InfoFrame
 
 _MINIMUM_WIDTH = 800 # minimum window width
 _MINIMUM_HEIGHT = 600 # minimum window height
+_ROI_MIN_SIZE = 256
+_ROI_FRACTION = 0.3
 
 class SurfPlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
@@ -102,3 +104,10 @@ class SurfPlot(qtgui.QMdiSubWindow):
 
     def _draw_overview(self):
         self._overview.setImage(image=self._data, autoLevels=True)
+        x_count, y_count = self._data.shape
+        x_size = max(min(x_count, _ROI_MIN_SIZE), x_count*_ROI_FRACTION)
+        y_size = max(min(y_count, _ROI_MIN_SIZE), y_count*_ROI_FRACTION)
+        self._overview_roi = qtgraph.RectROI([0, 0], [x_size, y_size], 
+                                             pen=(0,9))
+        self._overview_roi.addScaleHandle(pos=[0, 0], center=[1, 1])
+        self._overview_view.addItem(self._overview_roi)
