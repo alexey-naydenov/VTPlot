@@ -56,7 +56,7 @@ class InfoFrame(qtgui.QFrame):
     """Information frame with cursor position and statistics."""
     DEFAULT_INFO_GROUPS = ['position', 'value', 'min', 'mean', 'max', 'var']
     
-    def __init__(self, parent, info_groups=None):
+    def __init__(self, parent=None, info_groups=None):
         super(InfoFrame, self).__init__(parent)
         info_groups = info_groups if info_groups else self.DEFAULT_INFO_GROUPS
         self._logger = plugin_utils.getLogger(defaults.PLUGIN_NAME)

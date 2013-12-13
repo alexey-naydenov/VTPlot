@@ -27,6 +27,7 @@ import functools
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
+import numpy as np
 import tables
 import pyqtgraph as qtgraph
 
@@ -38,6 +39,7 @@ from vitables.plugins.vtplot import about_page
 from vitables.plugins.vtplot import dataplot
 from vitables.plugins.vtplot import singleplot
 from vitables.plugins.vtplot import dualplot
+from vitables.plugins.vtplot import surfplot
 from vitables.plugins.vtplot import plotutils
 
 __author__ = defaults.AUTHOR
@@ -82,18 +84,27 @@ class VTPlot(qtcore.QObject):
                           triggered=self._plot_1d_array_with_zoom,
                           shortcut=qtgui.QKeySequence.UnknownKey,
                           statusTip=_('Plot long array.'))
+           
+        ]
+        self._surf_actions = [
+            qtgui.QAction(_('Surf plot'), self,
+                          triggered=self._plot_surface,
+                          shortcut=qtgui.QKeySequence.UnknownKey,
+                          statusTip=_('Plot surface.'))
         ]
         self._submenu = qtgui.QMenu(_(defaults.MENU_NAME))
-        for action in self._array_actions:
+        for action in self._array_actions + self._surf_actions:
             self._submenu.addAction(action)
         # add to menus
         plugin_utils.addToMenuBar(self._submenu)
-        self._submenu.aboutToShow.connect(self._enable_for_arrays)
+        self._submenu.aboutToShow.connect(self._enable_for_right_dimension)
         plotutils.addToLeafContextMenu(self._array_actions, 
-                                       self._enable_for_arrays)
+                                       self._enable_for_right_dimension)
+        plotutils.addToLeafContextMenu(self._surf_actions, 
+                                       self._enable_for_right_dimension)
         
 
-    def _enable_for_arrays(self):
+    def _enable_for_right_dimension(self):
         """Enable array plots only if all selected objects are 1d arrays."""
         enabled = True
         for leaf in plotutils.getSelectedLeafs():
@@ -101,6 +112,13 @@ class VTPlot(qtcore.QObject):
                 enabled = False
                 break
         for action in self._array_actions:
+            action.setEnabled(enabled)
+        enabled = True
+        for leaf in plotutils.getSelectedLeafs():
+            if not isinstance(leaf, tables.array.Array) or len(leaf.shape) != 2:
+                enabled = False
+                break
+        for action in self._surf_actions:
             action.setEnabled(enabled)
 
 
@@ -125,3 +143,13 @@ class VTPlot(qtcore.QObject):
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
         
+    @plugin_utils.long_action(_('Plotting data, please wait ...'))
+    def _plot_surface(self, unused):
+        """Display two plots: overall view and zoomed to region."""
+        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
+        leaf = plugin_utils.getSelectedLeaf()
+        plot_window = surfplot.SurfPlot(parent=self._mdiarea, 
+                                        index=index, leaf=np.abs(leaf),
+                                        leaf_name=leaf.name)
+        self._mdiarea.addSubWindow(plot_window)
+        plot_window.show()
