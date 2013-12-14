@@ -70,6 +70,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self.setMinimumHeight(_MINIMUM_HEIGHT)
         self._setup_display_objects()
         self._draw_overview()
+        self._update_cursor_info()
         self._info.fit_content()
         self._setup_splitter()
 
@@ -123,9 +124,12 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._overview_roi.addScaleHandle(pos=[0, 1], center=[1, 0])
         self._overview_roi.addScaleHandle(pos=[1, 0], center=[0, 1])
         self._overview_view.addItem(self._overview_roi)
-        # connect roi signal
+        # connect signals
         self._overview_roi.sigRegionChangeFinished.connect(self._roi_update)
         self._roi_update()
+        self._mouse_position_proxy = qtgraph.SignalProxy(
+            self._overview.scene().sigMouseMoved, rateLimit=30,
+            slot=self._update_cursor_info)
 
     def _roi_update(self):
         boundaries, transformation = self._overview_roi.getArraySlice(
@@ -134,7 +138,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
         x_range = (boundaries[0][0], min(max_x - 1, boundaries[0][1]))
         y_range = (boundaries[1][0], min(max_y - 1, boundaries[1][1]))
         self._update_surface(x_range, y_range)
-        self._update_roi_statistics_info(x_range, y_range)
+        self._update_roi_info(x_range, y_range)
 
     def _update_surface(self, x_range, y_range):
         data = np.copy(self._data[x_range[0]:x_range[1], y_range[0]:y_range[1]])
@@ -143,13 +147,14 @@ class SurfPlot(qtgui.QMdiSubWindow):
         y_data = np.linspace(-1, 1, y_range[1] - y_range[0])
         self._surface.setData(x=x_data, y=y_data, z=data)
 
-    def _update_roi_statistics_info(self, x_range=None, y_range=None):
+    def _update_roi_info(self, x_range=None, y_range=None):
         if not x_range or not y_range:
             self._update_roi_boundaries_info()
             return
         min_x, max_x = x_range
         min_y, max_y = y_range
         self._update_roi_boundaries_info(min_x, max_x, min_y, max_y)
+        self._update_roi_statistics_info(min_x, max_x, min_y, max_y)
 
     def _update_roi_boundaries_info(self, min_x=float('nan'), 
                                     max_x=float('nan'), min_y=float('nan'), 
@@ -157,3 +162,33 @@ class SurfPlot(qtgui.QMdiSubWindow):
         legend = [_RANGE_TEMPLATE.format(name='x', min_=min_x, max_=max_x),
                   _RANGE_TEMPLATE.format(name='y', min_=min_y, max_=max_y)]
         self._info.update_entry(_ROI_GROUP, '<br/>'.join(legend))
+
+    def _update_roi_statistics_info(self, min_x=None, max_x=None, min_y=None, 
+                                    max_y=None):
+        if not min_x or not max_x or not min_y or not max_y:
+            for stat_name in self._stat_groups:
+                self._info.update_entry(stat_name, 'nan')
+        x_count, y_count = self._data.shape
+        min_x = max(0, min_x)
+        max_x = min(x_count, max_x)
+        min_y = max(0, min_y)
+        max_y = min(y_count, max_y)
+        data_slice = self._data[min_x:max_x, min_y:max_y]
+        for stat_name in self._stat_groups:
+                self._info.update_entry(
+                    stat_name, '{0:.5g}'.format(
+                        self._STAT_FUNCTION_DICT[stat_name](data_slice)))
+
+    def _update_cursor_info(self, event=None):
+        x, y, value = float('nan'), float('nan'), float('nan')
+        if event:
+            x, y = plotutils.mouse_event_to_coordinates(self._overview, event)
+            if not x:
+                return
+            x, y = int(x), int(y)
+            if x >= 0 and x < self._data.shape[0] \
+               and y >= 0 and y < self._data.shape[1]:
+                value = self._data[x, y]
+        legend = ['x = {0}'.format(x), 'y = {0}'.format(y),
+                  'value = {0:.5g}'.format(value)]
+        self._info.update_entry(_CURSOR_GROUP, '<br/>'.join(legend))
