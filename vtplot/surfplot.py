@@ -79,6 +79,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._overview = qtgraph.ImageItem(parent=self._overview_layout)
         self._overview_view.addItem(self._overview)
         self._surface_view = glgraph.GLViewWidget()
+        self._surface_view.setCameraPosition(distance=3, azimuth=-45)
         self._setup_surface_object()
         self._setup_axis()
         self._info = InfoFrame(info_groups=self._displayed_groups)
