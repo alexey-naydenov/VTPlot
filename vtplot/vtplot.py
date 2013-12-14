@@ -127,6 +127,11 @@ class VTPlot(qtcore.QObject):
         """Display two plots: overall view and zoomed to region."""
         index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
         leafs = plotutils.getSelectedLeafs()
+        for leaf in leafs:
+            if leaf.dtype.kind in 'cSUV':
+                self._logger.error(
+                    'Can not plot type: {0}'.format(str(leaf.dtype)))
+                return
         plot_window = dualplot.DualPlot(parent=self._mdiarea, 
                                         index=index, leafs=leafs)
         self._mdiarea.addSubWindow(plot_window)
@@ -138,6 +143,11 @@ class VTPlot(qtcore.QObject):
         """Display one plot with crosshair ad statistics."""
         index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
         leafs = plotutils.getSelectedLeafs()
+        for leaf in leafs:
+            if leaf.dtype.kind in 'cSUV':
+                self._logger.error(
+                    'Can not plot type: {0}'.format(str(leaf.dtype)))
+                return
         plot_window = singleplot.SinglePlot(parent=self._mdiarea,
                                             index=index, leafs=leafs)
         self._mdiarea.addSubWindow(plot_window)
@@ -148,8 +158,11 @@ class VTPlot(qtcore.QObject):
         """Display two plots: overall view and zoomed to region."""
         index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
         leaf = plugin_utils.getSelectedLeaf()
-        plot_window = surfplot.SurfPlot(parent=self._mdiarea, 
-                                        index=index, leaf=np.abs(leaf),
-                                        leaf_name=leaf.name)
+        if leaf.dtype.kind == 'c':
+            data = np.abs(leaf)
+        else:
+            data = np.array(leaf)
+        plot_window = surfplot.SurfPlot(parent=self._mdiarea, index=index,
+                                        leaf=data, leaf_name=leaf.name)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()

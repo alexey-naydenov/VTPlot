@@ -87,9 +87,6 @@ class SinglePlot(qtgui.QMdiSubWindow):
         self._plot = self._graphics_layout.addPlot(row=0, col=0)
         self._info = InfoFrame(parent=self._splitter, 
                                info_groups=self._displayed_groups)
-        # only stretch plot window
-        self._splitter.setStretchFactor(0, 1)
-        self._splitter.setStretchFactor(1, 0)
         # setup plot
         for leaf, color in zip(self._leafs, 
                                itertools.cycle(plotutils.PLOT_COLORS)):
@@ -100,6 +97,9 @@ class SinglePlot(qtgui.QMdiSubWindow):
         # combine objects
         self._splitter.addWidget(self._graphics_layout)
         self._splitter.addWidget(self._info)
+        # only stretch plot window
+        self._splitter.setStretchFactor(0, 1)
+        self._splitter.setStretchFactor(1, 0)
         self.setWidget(self._splitter)
 
     def _update_info(self, info_name, values):

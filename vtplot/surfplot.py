@@ -103,14 +103,14 @@ class SurfPlot(qtgui.QMdiSubWindow):
 
     def _setup_splitter(self):
         self._splitter = qtgui.QSplitter(orientation=qtcore.Qt.Horizontal)
-        # make sure info pane does not change size
-        self._splitter.setStretchFactor(0, 1)
-        self._splitter.setStretchFactor(1, 1)
-        self._splitter.setStretchFactor(2, 0)
         # append objects
         self._splitter.addWidget(self._overview_layout)
         self._splitter.addWidget(self._surface_view)
         self._splitter.addWidget(self._info)
+        # make sure info pane does not change size
+        self._splitter.setStretchFactor(0, 1)
+        self._splitter.setStretchFactor(1, 1)
+        self._splitter.setStretchFactor(2, 0)
         self.setWidget(self._splitter)
 
     def _draw_overview(self):
