@@ -62,33 +62,22 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._setup_display_objects()
         self._draw_overview()
         self._setup_splitter()
-        # display image
-        x_count, y_count = self._data.shape
-        scale = x_count/y_count
-        #self._overview.setImage(image=np.abs(self._data), autoLevels=True)
-        # surf
-        scale = 1
-        heights = np.abs(self._data)
-        heights = scale*heights/np.amax(heights)
-        x_count, y_count = heights.shape
-        # ensure everything fits into a cube
-        xs = np.linspace(-scale, scale, x_count)
-        ys = np.linspace(-scale, scale, y_count)
-        surf = glgraph.GLSurfacePlotItem(
-            x=xs, y=ys, z=heights, shader='heightColor', smooth=False,
-            computeNormals=False)
-        delta = -0.2
-        surf.shader()['colorMap'] = np.array([1/(1 - delta), -delta, 1, 
-                                              1/(delta - 1), -1, 1, 
-                                              0, 0, 0])
-        self._surface.addItem(surf)
 
     def _setup_display_objects(self):
         self._overview_layout = qtgraph.GraphicsLayoutWidget()
-        self._overview_view = self._overview_layout.addViewBox(row=0, col=0)
+        #self._overview_view = self._overview_layout.addViewBox(row=0, col=0)
+        self._overview_view = self._overview_layout.addPlot(row=0, col=0)
         self._overview = qtgraph.ImageItem(parent=self._overview_layout)
         self._overview_view.addItem(self._overview)
-        self._surface = glgraph.GLViewWidget()
+        self._surface_view = glgraph.GLViewWidget()
+        self._surface = glgraph.GLSurfacePlotItem(
+            shader='heightColor', smooth=False, computeNormals=False)
+        delta = -0.2
+        self._surface.shader()['colorMap'] = np.array(
+            [1/(1 - delta), -delta, 1, 
+             1/(delta - 1), -1, 1, 
+             0, 0, 0])
+        self._surface_view.addItem(self._surface)
         self._info = InfoFrame(info_groups=self._displayed_groups)
 
     def _setup_splitter(self):
@@ -98,7 +87,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._splitter.setStretchFactor(2, 0)
         # append objects
         self._splitter.addWidget(self._overview_layout)
-        self._splitter.addWidget(self._surface)
+        self._splitter.addWidget(self._surface_view)
         self._splitter.addWidget(self._info)
         self.setWidget(self._splitter)
 
@@ -111,3 +100,21 @@ class SurfPlot(qtgui.QMdiSubWindow):
                                              pen=(0,9))
         self._overview_roi.addScaleHandle(pos=[0, 0], center=[1, 1])
         self._overview_view.addItem(self._overview_roi)
+        self._overview_roi.sigRegionChangeFinished.connect(self._roi_update)
+        self._roi_update()
+
+    def _roi_update(self):
+        boundaries, transformation = self._overview_roi.getArraySlice(
+            self._data, self._overview, returnSlice=False)
+        max_x, max_y = self._data.shape
+        x_range = (boundaries[0][0], min(max_x - 1, boundaries[0][1]))
+        y_range = (boundaries[1][0], min(max_y - 1, boundaries[1][1]))
+        self._update_surface(x_range, y_range)
+
+    def _update_surface(self, x_range, y_range):
+        data = np.copy(self._data[x_range[0]:x_range[1], y_range[0]:y_range[1]])
+        data /= np.amax(data)
+        x_data = np.linspace(-1, 1, x_range[1] - x_range[0])
+        y_data = np.linspace(-1, 1, y_range[1] - y_range[0])
+        self._surface.setData(x=x_data, y=y_data, z=data)
+
