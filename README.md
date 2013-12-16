@@ -5,9 +5,19 @@ ViTables data plotting plugin.
 
 ## Screenshots ##
 
+`Plot` menu entry displays selected datasets along with cursor
+ position, dataset values at `x` cursor position and statistics of
+ shown data.
+
 ![single plot screenshot](doc/images/single_plot.png)
 
+`Dual plot` menu entry displays an overall view (bottom graph) and the
+portion of data (top graph) selected on the overall view.
+
 ![dual plot screenshot](doc/images/dual_plot.png)
+
+`Surf plot` shows heat map of data and 3D view of selected region of
+interest
 
 ![surf plot screenshot](doc/images/surf_plot.png)
 
