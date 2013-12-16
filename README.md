@@ -5,11 +5,11 @@ ViTables data plotting plugin.
 
 ## Screenshots ##
 
-![single plot screenshot](docs/images/single_plot.png)
+![single plot screenshot](doc/images/single_plot.png)
 
-![dual plot screenshot](docs/images/dual_plot.png)
+![dual plot screenshot](doc/images/dual_plot.png)
 
-![surf plot screenshot](docs/images/surf_plot.png)
+![surf plot screenshot](doc/images/surf_plot.png)
 
 
 ## Setting up development environment ##
