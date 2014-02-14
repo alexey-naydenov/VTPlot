@@ -24,8 +24,8 @@ import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
 import vitables.plugin_utils as plugin_utils
-import vitables.plugins.vtplot as vtp
-from vitables.plugins.vtplot import defaults
+import vtplot as vtp
+from vtplot import defaults
 
 def _(s):
     return qtgui.QApplication.translate(vtp.defaults.MODULE_NAME, s)

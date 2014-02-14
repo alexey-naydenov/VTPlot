@@ -26,7 +26,7 @@ from PyQt4 import QtGui
 from PyQt4 import QtCore
 from PyQt4 import uic
 
-from vitables.plugins.vtplot import defaults
+from vtplot import defaults
 
 def _(s):
     return QtGui.QApplication.translate(defaults.MODULE_NAME, s)

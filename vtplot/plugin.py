@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 #
-# livability.py
+# vtplot.py
 #
 # Copyright (C) 2013 Alexey Naydenov <alexey.naydenov@linux.com>
 #
@@ -34,13 +34,13 @@ import pyqtgraph as qtgraph
 from vitables import utils as vtutils
 from vitables import plugin_utils
 
-from vitables.plugins.vtplot import defaults
-from vitables.plugins.vtplot import about_page
-from vitables.plugins.vtplot import dataplot
-from vitables.plugins.vtplot import singleplot
-from vitables.plugins.vtplot import dualplot
-from vitables.plugins.vtplot import surfplot
-from vitables.plugins.vtplot import plotutils
+import vtplot.defaults as defaults
+import vtplot.about_page as about_page
+import vtplot.dataplot as dataplot
+import vtplot.singleplot as singleplot
+import vtplot.dualplot as dualplot
+import vtplot.surfplot as surfplot
+import vtplot.plotutils as plotutils
 
 __author__ = defaults.AUTHOR
 __version__ = defaults.VERSION
@@ -54,6 +54,10 @@ def _(s):
 
 class VTPlot(qtcore.QObject):
     """Plugin class for interaction with the main program."""
+
+    UID = 'vitables.plugins.vtplot'
+    NAME = defaults.PLUGIN_NAME
+    COMMENT = defaults.COMMENT
 
     def __init__(self):
         super(VTPlot, self).__init__()

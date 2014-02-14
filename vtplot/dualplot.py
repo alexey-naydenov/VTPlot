@@ -28,8 +28,8 @@ import PyQt4.QtCore as qtcore
 import tables
 import pyqtgraph as qtgraph
 
-from vitables.plugins.vtplot import plotutils
-from vitables.plugins.vtplot import singleplot
+from vtplot import plotutils
+from vtplot import singleplot
 
 
 class DualPlot(singleplot.SinglePlot):

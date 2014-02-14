@@ -32,8 +32,8 @@ import pyqtgraph as qtgraph
 import pyqtgraph.opengl as glgraph
 
 import vitables.plugin_utils as plugin_utils
-from vitables.plugins.vtplot import plotutils
-from vitables.plugins.vtplot.infoframe import InfoFrame
+from vtplot import plotutils
+from vtplot.infoframe import InfoFrame
 
 _MINIMUM_WIDTH = 800 # minimum window width
 _MINIMUM_HEIGHT = 600 # minimum window height
