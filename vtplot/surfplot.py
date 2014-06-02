@@ -68,6 +68,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
     def _init_gui(self):
         self.setMinimumWidth(_MINIMUM_WIDTH)
         self.setMinimumHeight(_MINIMUM_HEIGHT)
+        self.setWindowTitle('Plot - ' + self._leaf_name)
         self._setup_display_objects()
         self._draw_overview()
         self._update_cursor_info()

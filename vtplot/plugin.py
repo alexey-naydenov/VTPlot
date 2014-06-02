@@ -167,6 +167,6 @@ class VTPlot(qtcore.QObject):
         else:
             data = np.array(leaf)
         plot_window = surfplot.SurfPlot(parent=self._mdiarea, index=index,
-                                        leaf=data, leaf_name=leaf.name)
+                                        leaf=data, leaf_name=leaf._v_pathname)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
