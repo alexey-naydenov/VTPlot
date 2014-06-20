@@ -54,7 +54,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
     def __init__(self, parent=None, index=None, leaf=None, leaf_name=None):
         super(SurfPlot, self).__init__(parent)
         self._leaf_name = leaf_name if leaf_name else 'none'
-        self._data = leaf
+        self._data = 20*np.log10(leaf)
         self._stat_groups = ['max', 'mean', 'min']
         self._displayed_groups = [_CURSOR_GROUP, _ROI_GROUP] + self._stat_groups
         # gui stuff
@@ -89,11 +89,11 @@ class SurfPlot(qtgui.QMdiSubWindow):
     def _setup_surface_object(self):
         self._surface = glgraph.GLSurfacePlotItem(
             shader='heightColor', smooth=False, computeNormals=False)
-        delta = -0.2
+        split = 1/3.0
         self._surface.shader()['colorMap'] = np.array(
-            [1/(1 - delta), -delta, 1, 
-             1/(delta - 1), -1, 1, 
-             0, 0, 0])
+            [1/split, -split, 1,
+             -1/split, -3*split, 1,
+             -1/split, -split, 1])
         self._surface_view.addItem(self._surface)
         self._overview.setImage(image=self._data, autoLevels=True)
 
@@ -141,11 +141,29 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._update_surface(x_range, y_range)
         self._update_roi_info(x_range, y_range)
 
+    def _set_shader_spread(self, spread):
+        incline = 3.0/2/spread
+        self._surface.shader()['colorMap'] = np.array(
+            [incline, spread/3, 1,
+             -incline, -spread, 1,
+             -incline, spread/3, 1])
+
     def _update_surface(self, x_range, y_range):
-        data = np.copy(self._data[x_range[0]:x_range[1], y_range[0]:y_range[1]])
-        data /= np.amax(data)
+        data = np.copy(self._data[x_range[0]:x_range[1],
+                                  y_range[0]:y_range[1]])
+        # data -= np.amin(data)
+        # data /= np.amax(data)
+        std = np.std(data)
+        data -= np.mean(data)
+        data /= 8*std
         x_data = np.linspace(-1, 1, x_range[1] - x_range[0])
         y_data = np.linspace(-1, 1, y_range[1] - y_range[0])
+        # x_count = x_range[1] - x_range[0]
+        # y_count = y_range[1] - y_range[0]
+        # scale = min(x_count, y_count)
+        # x_data = np.linspace(-x_count/scale, x_count/scale, x_count)
+        # y_data = np.linspace(-y_count/scale, y_count/scale, y_count)
+        self._set_shader_spread(0.3)
         self._surface.setData(x=x_data, y=y_data, z=data)
 
     def _update_roi_info(self, x_range=None, y_range=None):
