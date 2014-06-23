@@ -28,8 +28,10 @@ import PyQt4.QtCore as qtcore
 import tables
 import pyqtgraph as qtgraph
 
-from vitables.plugins.vtplot import plotutils
-from vitables.plugins.vtplot import singleplot
+from vtplot import plotutils
+from vtplot import singleplot
+
+_OVERVIEW_HEIGHT = 100
 
 
 class DualPlot(singleplot.SinglePlot):
@@ -42,14 +44,15 @@ class DualPlot(singleplot.SinglePlot):
         self._add_overview_plot()
         self._add_zoom_region()
         self._connect_zoom_region_and_plot()
-        
+
     def _add_overview_plot(self):
         self._overview_plot = self._graphics_layout.addPlot(row=1, col=0)
+        self._overview_plot.setFixedHeight(_OVERVIEW_HEIGHT)
         # setup plot
-        for leaf, color in zip(self._leafs, 
+        for leaf, color in zip(self._leafs,
                                itertools.cycle(plotutils.PLOT_COLORS)):
             self._overview_plot.plot(leaf, pen=color)
-        
+
     def _add_zoom_region(self):
         self._zoom_region = qtgraph.LinearRegionItem(
             orientation=qtgraph.LinearRegionItem.Vertical)
@@ -58,7 +61,7 @@ class DualPlot(singleplot.SinglePlot):
 
     def _connect_zoom_region_and_plot(self):
         self._zoom_region.sigRegionChanged.connect(self._sync_plot_to_region)
-        if self._leafs: # plot might be is empty
+        if self._leafs:  # plot might be is empty
             data_length = self._leafs[0].shape[0]
             max_len = min(1000, data_length)
             self._zoom_region.setRegion([0, max(max_len, 0.1*data_length)])

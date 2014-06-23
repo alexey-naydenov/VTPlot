@@ -31,8 +31,8 @@ import tables
 import pyqtgraph as qtgraph
 
 import vitables.plugin_utils as plugin_utils
-from vitables.plugins.vtplot import plotutils
-from vitables.plugins.vtplot.infoframe import InfoFrame
+from vtplot import plotutils
+from vtplot.infoframe import InfoFrame
 
 _MINIMUM_WIDTH = 800 # minimum window width
 _MINIMUM_HEIGHT = 600 # minimum window height
@@ -85,10 +85,10 @@ class SinglePlot(qtgui.QMdiSubWindow):
                                          orientation=qtcore.Qt.Horizontal)
         self._graphics_layout = qtgraph.GraphicsLayoutWidget()
         self._plot = self._graphics_layout.addPlot(row=0, col=0)
-        self._info = InfoFrame(parent=self._splitter, 
+        self._info = InfoFrame(parent=self._splitter,
                                info_groups=self._displayed_groups)
         # setup plot
-        for leaf, color in zip(self._leafs, 
+        for leaf, color in zip(self._leafs,
                                itertools.cycle(plotutils.PLOT_COLORS)):
             self._plot.plot(leaf, pen=color)
         plotutils.set_window_title(self, self._leafs)

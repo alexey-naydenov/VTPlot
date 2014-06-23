@@ -43,7 +43,7 @@ def to_list(stuff):
     return stuff
 
 def set_window_title(window, leafs):
-    names = [l.name for l in leafs]
+    names = [l._v_pathname for l in leafs]
     window.setWindowTitle('Plot - ' + ', '.join(names))
     
 def add_crosshair_to(plot):

@@ -32,8 +32,8 @@ import pyqtgraph as qtgraph
 import pyqtgraph.opengl as glgraph
 
 import vitables.plugin_utils as plugin_utils
-from vitables.plugins.vtplot import plotutils
-from vitables.plugins.vtplot.infoframe import InfoFrame
+from vtplot import plotutils
+from vtplot.infoframe import InfoFrame
 
 _MINIMUM_WIDTH = 800 # minimum window width
 _MINIMUM_HEIGHT = 600 # minimum window height
@@ -45,10 +45,11 @@ _ROI_GROUP = 'roi'
 
 _RANGE_TEMPLATE = '{name} = {min_} ... {max_}'
 
+
 class SurfPlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
 
-    _STAT_FUNCTION_DICT = {'min': np.amin, 'mean': np.mean, 'max': np.amax, 
+    _STAT_FUNCTION_DICT = {'min': np.amin, 'mean': np.mean, 'max': np.amax,
                            'std': np.std}
 
     def __init__(self, parent=None, index=None, leaf=None, leaf_name=None):
@@ -56,7 +57,8 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._leaf_name = leaf_name if leaf_name else 'none'
         self._data = leaf
         self._stat_groups = ['max', 'mean', 'min']
-        self._displayed_groups = [_CURSOR_GROUP, _ROI_GROUP] + self._stat_groups
+        self._displayed_groups = [_CURSOR_GROUP,
+                                  _ROI_GROUP] + self._stat_groups
         # gui stuff
         self.setAttribute(qtcore.Qt.WA_DeleteOnClose)
         self._init_gui()
@@ -68,7 +70,9 @@ class SurfPlot(qtgui.QMdiSubWindow):
     def _init_gui(self):
         self.setMinimumWidth(_MINIMUM_WIDTH)
         self.setMinimumHeight(_MINIMUM_HEIGHT)
+        self.setWindowTitle('Plot - ' + self._leaf_name)
         self._setup_display_objects()
+        self._setup_slice_plots()
         self._draw_overview()
         self._update_cursor_info()
         self._info.fit_content()
@@ -85,14 +89,23 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._setup_axis()
         self._info = InfoFrame(info_groups=self._displayed_groups)
 
+    def _setup_slice_plots(self):
+        self._slice_layout = qtgraph.GraphicsLayoutWidget()
+        self._vertical_slice = self._slice_layout.addPlot(row=0, col=0)
+        self._vertical_curve = self._vertical_slice.plot(
+            self._data[0, ...], pen='b')
+        self._horizontal_slice = self._slice_layout.addPlot(row=1, col=0)
+        self._horizontal_curve = self._horizontal_slice.plot(
+            self._data[..., 0], pen='b')
+
     def _setup_surface_object(self):
         self._surface = glgraph.GLSurfacePlotItem(
             shader='heightColor', smooth=False, computeNormals=False)
-        delta = -0.2
+        split = 1/3.0
         self._surface.shader()['colorMap'] = np.array(
-            [1/(1 - delta), -delta, 1, 
-             1/(delta - 1), -1, 1, 
-             0, 0, 0])
+            [1/split, -split, 1,
+             -1/split, -3*split, 1,
+             -1/split, -split, 1])
         self._surface_view.addItem(self._surface)
         self._overview.setImage(image=self._data, autoLevels=True)
 
@@ -103,10 +116,17 @@ class SurfPlot(qtgui.QMdiSubWindow):
 
     def _setup_splitter(self):
         self._splitter = qtgui.QSplitter(orientation=qtcore.Qt.Horizontal)
+        self._overview_splitter = qtgui.QSplitter(
+            orientation=qtcore.Qt.Vertical)
         # append objects
-        self._splitter.addWidget(self._overview_layout)
+        self._overview_splitter.addWidget(self._overview_layout)
+        self._overview_splitter.addWidget(self._slice_layout)
+        self._splitter.addWidget(self._overview_splitter)
         self._splitter.addWidget(self._surface_view)
         self._splitter.addWidget(self._info)
+        # setup overview splitter
+        self._overview_splitter.setStretchFactor(0, 3)
+        self._overview_splitter.setStretchFactor(1, 1)
         # make sure info pane does not change size
         self._splitter.setStretchFactor(0, 1)
         self._splitter.setStretchFactor(1, 1)
@@ -130,6 +150,9 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._mouse_position_proxy = qtgraph.SignalProxy(
             self._overview.scene().sigMouseMoved, rateLimit=30,
             slot=self._update_cursor_info)
+        self._slice_graph_proxy = qtgraph.SignalProxy(
+            self._overview.scene().sigMouseMoved, rateLimit=10,
+            slot=self._update_slice_graphs)
 
     def _roi_update(self):
         boundaries, transformation = self._overview_roi.getArraySlice(
@@ -140,11 +163,22 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._update_surface(x_range, y_range)
         self._update_roi_info(x_range, y_range)
 
+    def _set_shader_spread(self, spread):
+        incline = 3.0/2/spread
+        self._surface.shader()['colorMap'] = np.array(
+            [incline, spread/3, 1,
+             -incline, -spread, 1,
+             -incline, spread/3, 1])
+
     def _update_surface(self, x_range, y_range):
-        data = np.copy(self._data[x_range[0]:x_range[1], y_range[0]:y_range[1]])
-        data /= np.amax(data)
+        data = np.copy(self._data[x_range[0]:x_range[1],
+                                  y_range[0]:y_range[1]])
+        std = np.std(data)
+        data -= np.mean(data)
+        data /= 8*std
         x_data = np.linspace(-1, 1, x_range[1] - x_range[0])
         y_data = np.linspace(-1, 1, y_range[1] - y_range[0])
+        self._set_shader_spread(0.3)
         self._surface.setData(x=x_data, y=y_data, z=data)
 
     def _update_roi_info(self, x_range=None, y_range=None):
@@ -192,3 +226,17 @@ class SurfPlot(qtgui.QMdiSubWindow):
         legend = ['x = {0}'.format(x), 'y = {0}'.format(y),
                   'value = {0:.5g}'.format(value)]
         self._info.update_entry(_CURSOR_GROUP, '<br/>'.join(legend))
+
+    def _update_slice_graphs(self, event=None):
+        if event is None:
+            return
+        x, y = plotutils.mouse_event_to_coordinates(self._overview, event)
+        if not x:
+            return
+        x, y = int(x), int(y)
+        if x < 0 or x >= self._data.shape[0] \
+           or y < 0 or y >= self._data.shape[1]:
+            return
+        self._vertical_curve.setData(y=self._data[x, ...])
+        self._horizontal_curve.setData(y=self._data[..., y])
+    
