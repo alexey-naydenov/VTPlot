@@ -85,10 +85,10 @@ class SinglePlot(qtgui.QMdiSubWindow):
                                          orientation=qtcore.Qt.Horizontal)
         self._graphics_layout = qtgraph.GraphicsLayoutWidget()
         self._plot = self._graphics_layout.addPlot(row=0, col=0)
-        self._info = InfoFrame(parent=self._splitter, 
+        self._info = InfoFrame(parent=self._splitter,
                                info_groups=self._displayed_groups)
         # setup plot
-        for leaf, color in zip(self._leafs, 
+        for leaf, color in zip(self._leafs,
                                itertools.cycle(plotutils.PLOT_COLORS)):
             self._plot.plot(leaf, pen=color)
         plotutils.set_window_title(self, self._leafs)

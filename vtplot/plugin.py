@@ -81,14 +81,9 @@ class VTPlot(qtcore.QObject):
         """Add submenu with plot actions."""
         self._array_actions = [
             qtgui.QAction(_('Plot'), self, 
-                          triggered=self._plot_1d_array,
-                          shortcut=qtgui.QKeySequence.UnknownKey,
-                          statusTip=_('Plot an array.')),
-            qtgui.QAction(_('Dual plot'), self, 
                           triggered=self._plot_1d_array_with_zoom,
                           shortcut=qtgui.QKeySequence.UnknownKey,
-                          statusTip=_('Plot long array.'))
-           
+                          statusTip=_('Plot an array.')),
         ]
         self._surf_actions = [
             qtgui.QAction(_('Surf plot'), self,
