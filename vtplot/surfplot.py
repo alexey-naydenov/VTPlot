@@ -54,7 +54,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
     def __init__(self, parent=None, index=None, leaf=None, leaf_name=None):
         super(SurfPlot, self).__init__(parent)
         self._leaf_name = leaf_name if leaf_name else 'none'
-        self._data = 20*np.log10(leaf)
+        self._data = leaf
         self._stat_groups = ['max', 'mean', 'min']
         self._displayed_groups = [_CURSOR_GROUP, _ROI_GROUP] + self._stat_groups
         # gui stuff
