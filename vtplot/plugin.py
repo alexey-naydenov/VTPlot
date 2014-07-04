@@ -76,88 +76,42 @@ class VTPlot(qtcore.QObject):
 
     def _add_submenu(self):
         """Add submenu with plot actions."""
-        self._array_actions = [
+        self._plot_actions = [
             qtgui.QAction(translate('vtplot', 'Plot'), self,
-                          triggered=self._plot_1d_array_with_zoom,
+                          triggered=self._plot_data,
                           shortcut=qtgui.QKeySequence.UnknownKey,
-                          statusTip=translate('vtplot', 'Plot an array.')),
+                          statusTip=translate('vtplot', 'Plot a dataset.')),
         ]
-        self._surf_actions = [
-            qtgui.QAction(translate('vtplot', 'Surf plot'), self,
-                          triggered=self._plot_surface,
-                          shortcut=qtgui.QKeySequence.UnknownKey,
-                          statusTip=translate('vtplot', 'Plot surface.'))
-        ]
-        self._submenu = qtgui.QMenu(translate('vtplot', defaults.MENU_NAME))
-        for action in self._array_actions + self._surf_actions:
-            self._submenu.addAction(action)
+        submenu = qtgui.QMenu(defaults.MENU_NAME)
+        for action in self._plot_actions:
+            submenu.addAction(action)
         # add to menus
-        vtu.addToMenuBar(self._submenu)
-        self._submenu.aboutToShow.connect(self._enable_for_right_dimension)
-        plotutils.addToLeafContextMenu(self._array_actions,
-                                       self._enable_for_right_dimension)
-        plotutils.addToLeafContextMenu(self._surf_actions,
-                                       self._enable_for_right_dimension)
+        vtu.addToMenuBar(submenu, self._check_selection)
+        vtu.addToLeafContextMenu(self._plot_actions, self._check_selection)
 
-    def _enable_for_right_dimension(self):
+    def _check_selection(self):
         """Enable array plots only if all selected objects are 1d arrays."""
-        enabled = True
-        for leaf in plotutils.getSelectedLeafs():
-            if not isinstance(leaf, tables.array.Array) \
-               or len(leaf.shape) != 1:
-                enabled = False
-                break
-        for action in self._array_actions:
-            action.setEnabled(enabled)
-        enabled = True
-        for leaf in plotutils.getSelectedLeafs():
-            if not isinstance(leaf, tables.array.Array) \
-               or len(leaf.shape) != 2:
-                enabled = False
-                break
-        for action in self._surf_actions:
+        nodes = vtu.getSelectedNodes()
+        enabled = plotutils.can_be_plotted(nodes)
+        for action in self._plot_actions:
             action.setEnabled(enabled)
 
     @vtu.long_action(translate('vtplot', 'Plotting data, please wait ...'))
-    def _plot_1d_array_with_zoom(self, _):
-        """Display two plots: overall view and zoomed to region."""
-        index = self._vtgui.dbs_tree_view.currentIndex()
-        leafs = plotutils.getSelectedLeafs()
-        for leaf in leafs:
-            if leaf.dtype.kind in 'cSUV':
-                self._logger.error(
-                    'Can not plot type: {0}'.format(str(leaf.dtype)))
-                return
-        plot_window = dualplot.DualPlot(parent=self._mdiarea,
-                                        index=index, leafs=leafs)
-        self._mdiarea.addSubWindow(plot_window)
-        plot_window.show()
-
-    @vtu.long_action(translate('vtplot', 'Plotting data, please wait ...'))
-    def _plot_1d_array(self, _):
-        """Display one plot with crosshair ad statistics."""
-        index = self._vtgui.dbs_tree_view.currentIndex()
-        leafs = plotutils.getSelectedLeafs()
-        for leaf in leafs:
-            if leaf.dtype.kind in 'cSUV':
-                self._logger.error(
-                    'Can not plot type: {0}'.format(str(leaf.dtype)))
-                return
-        plot_window = singleplot.SinglePlot(parent=self._mdiarea,
-                                            index=index, leafs=leafs)
-        self._mdiarea.addSubWindow(plot_window)
-        plot_window.show()
-
-    @vtu.long_action(translate('vtplot', 'Plotting data, please wait ...'))
-    def _plot_surface(self, _):
-        """Display two plots: overall view and zoomed to region."""
-        index = self._vtgui.dbs_tree_view.currentIndex()
-        leaf = vtu.getSelectedLeaf()
-        if leaf.dtype.kind == 'c':
-            data = np.abs(leaf)
+    def _plot_data(self, _):
+        """Display 1D or surface plot depending on data dimension."""
+        linked_index = vtu.getSelectedIndexes()[0]
+        nodes = []
+        for node in vtu.getSelectedNodes():
+            if node.dtype.kind == 'c':
+                node = np.abs(node)
+            nodes.append(node)
+        if nodes[0].ndim == 1:
+            plot_window = dualplot.DualPlot(
+                parent=self._mdiarea, index=linked_index, leafs=nodes)
         else:
-            data = np.array(leaf)
-        plot_window = surfplot.SurfPlot(parent=self._mdiarea, index=index,
-                                        leaf=data, leaf_name=leaf._v_pathname)
+            leaf_name = vtu.getSelectedNodes()[0]._v_pathname
+            plot_window = surfplot.SurfPlot(
+                parent=self._mdiarea, index=linked_index,
+                leaf=nodes[0], leaf_name=leaf_name)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()

@@ -29,11 +29,9 @@ import numpy as np
 import tables
 import pyqtgraph as qtgraph
 
-from vitables import utils as vtutils
-from vitables import plugin_utils
-
 PLOT_COLORS = ['b', 'r', 'g', 'c', 'm', 'y']
 LEGEND_LINE = "<span style='color: {color}'>{name}</span> = {value:.5g}"
+
 
 def to_list(stuff):
     if stuff is None:
@@ -42,10 +40,12 @@ def to_list(stuff):
         return [stuff]
     return stuff
 
+
 def set_window_title(window, leafs):
     names = [l._v_pathname for l in leafs]
     window.setWindowTitle('Plot - ' + ', '.join(names))
-    
+
+
 def add_crosshair_to(plot):
     """Connect mouse move to drawing crosshair on plot."""
     vertical_line = qtgraph.InfiniteLine(angle=90, movable=False)
@@ -53,9 +53,11 @@ def add_crosshair_to(plot):
     plot.addItem(vertical_line, ignoreBounds=True)
     plot.addItem(horizontal_line, ignoreBounds=True)
     # define slot for mouse move
+
     def move_crosshair(event):
         """Move crosshair on mouse event, use with SignalProxy."""
-        position = event[0]  # signal proxy turns original arguments into a tuple
+        # signal proxy turns original arguments into a tuple
+        position = event[0]
         view_box = plot.getViewBox()
         if not view_box.sceneBoundingRect().contains(position):
             return
@@ -63,12 +65,14 @@ def add_crosshair_to(plot):
         vertical_line.setPos(mouse_point.x())
         horizontal_line.setPos(mouse_point.y())
     # don't process all mouse moves
-    proxy = qtgraph.SignalProxy(plot.scene().sigMouseMoved, rateLimit=60, 
+    proxy = qtgraph.SignalProxy(plot.scene().sigMouseMoved, rateLimit=60,
                                 slot=move_crosshair)
-    return proxy # proxy must persist with the plot
+    return proxy  # proxy must persist with the plot
+
 
 def get_data_item_color(data_item):
     return data_item.curve.opts['pen'].color().name()
+
 
 def get_data_item_value(data_item, position):
     index = int(position + 0.5)
@@ -76,33 +80,6 @@ def get_data_item_value(data_item, position):
         return float('nan')
     return data_item.yData[index]
 
-def getDBsTreeView():
-    return plugin_utils.getVTGui().dbs_tree_view
-
-def getSelectedIndices():
-    return getDBsTreeView().selectionModel().selection().indexes()
-
-def getSelectedLeafs():
-    indixes = getSelectedIndices()
-    leafs = [plugin_utils.getDBsTreeModel().nodeFromIndex(index).node 
-             for index in indixes]
-    return leafs
-
-def addToLeafContextMenu(actions, enable_function=None):
-    """Add entries at the end of the leaf context menu.
-
-    The function accept a QAction/QMenu or an iterable. Entries will be
-    preceded with a separator and added at the end of the menu.
-
-    :parameter actions: QAction/QMenu object or a list of such objects
-
-    :return: None
-    """
-    vtgui = plugin_utils.getVTGui()
-    context_menu = vtgui.leaf_node_cm
-    plugin_utils.addToMenu(context_menu, actions)
-    if enable_function:
-        context_menu.aboutToShow.connect(enable_function)
 
 def mouse_event_to_coordinates(plot, event):
     """Convert proxy event into x, y coordinates.
@@ -110,12 +87,13 @@ def mouse_event_to_coordinates(plot, event):
     event is received from signal proxy.
     """
     # signal proxy turns original arguments into a tuple
-    position = event[0] 
+    position = event[0]
     view_box = plot.getViewBox()
     if not view_box.sceneBoundingRect().contains(position):
         return None, None
     mouse_point = view_box.mapSceneToView(position)
     return mouse_point.x(), mouse_point.y()
+
 
 def update_position_info(plot, info_pane, position_name, event=None):
     """Update the position text edit on mouse move event.
@@ -133,6 +111,7 @@ def update_position_info(plot, info_pane, position_name, event=None):
         LEGEND_LINE.format(color='black', name='y', value=y)]
     info_pane.update_entry(position_name, '<br/>'.join(legend))
 
+
 def calculate_statistics(plot, function, range_):
     stats = []
     for di in plot.listDataItems():
@@ -142,3 +121,19 @@ def calculate_statistics(plot, function, range_):
         else:
             stats.append(function(di.yData[index_range[0]:index_range[1]]))
     return stats
+
+
+def can_be_plotted(nodes):
+    """Check if nodes are arrays and the number of dimensions 1 or 2."""
+    if not nodes:
+        return False
+    if not all([isinstance(n, tables.array.Array) for n in nodes]):
+        return False
+    if not all([(n.dtype.kind in 'iufc') for n in nodes]):
+        return False
+    dimension = nodes[0].ndim
+    if dimension not in [1, 2]:
+        return False
+    if dimension == 1:
+        return all([n.ndim == dimension for n in nodes])
+    return len(nodes) == 1
