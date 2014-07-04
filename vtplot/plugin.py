@@ -30,9 +30,9 @@ import pyqtgraph as qtgraph
 
 from vitables import utils as vtutils
 from vitables import plugin_utils
+from vitables.plugins.aboutpage import AboutPage
 
 import vtplot.defaults as defaults
-import vtplot.about_page as about_page
 import vtplot.dataplot as dataplot
 import vtplot.singleplot as singleplot
 import vtplot.dualplot as dualplot
@@ -68,11 +68,14 @@ class VTPlot(qtcore.QObject):
         qtgraph.setConfigOption('background', 'w')
         qtgraph.setConfigOption('foreground', 'k')
 
-
     def helpAbout(self, parent):
-        self._about_page = about_page.AboutPage(parent)
-        return self._about_page
-
+        desc = {'version': defaults.VERSION,
+                'module_name': defaults.MODULE_NAME,
+                'folder': defaults.FOLDER,
+                'author': defaults.AUTHOR,
+                'comment': defaults.COMMENT}
+        about_page = AboutPage(desc, parent)
+        return about_page
 
     def _add_submenu(self):
         """Add submenu with plot actions."""
