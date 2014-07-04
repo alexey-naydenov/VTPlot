@@ -1,6 +1,3 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-#
 # vtplot.py
 #
 # Copyright (C) 2013 Alexey Naydenov <alexey.naydenov@linux.com>
