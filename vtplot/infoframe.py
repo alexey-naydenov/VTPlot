@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # infoframe.py
 #
@@ -20,17 +18,15 @@
 
 """Information frame with cursor position and statistics."""
 
+import logging
+
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
-import vitables.plugin_utils as plugin_utils
-import vtplot as vtp
-from vtplot import defaults
+translate = qtgui.QApplication.translate
 
-def _(s):
-    return qtgui.QApplication.translate(vtp.defaults.MODULE_NAME, s)
+_DEFAULT_TEXT_PADDING = 10  # in units of average char width
 
-_DEFAULT_TEXT_PADDING = 10 # in units of average char width
 
 def set_edits_to_content(edits, text_padding=_DEFAULT_TEXT_PADDING):
     """Change size of text edits to their content.
@@ -49,24 +45,25 @@ def set_edits_to_content(edits, text_padding=_DEFAULT_TEXT_PADDING):
     # set sizes, empty = one line spacing
     for e, s in zip(edits, text_sizes):
         line_spacing = e.fontMetrics().lineSpacing()
-        height = s.height() + 1.3*line_spacing # should not have to add this
+        height = s.height() + 1.3*line_spacing  # should not have to add this
         e.setFixedSize(qtcore.QSize(common_width, height))
+
 
 class InfoFrame(qtgui.QFrame):
     """Information frame with cursor position and statistics."""
     DEFAULT_INFO_GROUPS = ['position', 'value', 'min', 'mean', 'max', 'var']
-    
+
     def __init__(self, parent=None, info_groups=None):
         super(InfoFrame, self).__init__(parent)
         info_groups = info_groups if info_groups else self.DEFAULT_INFO_GROUPS
-        self._logger = plugin_utils.getLogger(defaults.PLUGIN_NAME)
+        self._logger = logging.getLogger(__name__)
         # layout and group boxes
         layout = qtgui.QVBoxLayout()
         self._name_display_dict = {}
         self._group_boxes = []
         for group_name in info_groups:
-            group_box = qtgui.QGroupBox(parent=self, 
-                                        title=_(group_name).capitalize())
+            group_box = qtgui.QGroupBox(
+                parent=self, title=group_name.capitalize())
             self._group_boxes.append(group_box)
             layout.addWidget(group_box)
             group_layout = qtgui.QVBoxLayout()

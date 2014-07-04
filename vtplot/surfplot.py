@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # surfplot.py
 #
@@ -20,18 +18,15 @@
 
 """Plot 2d data."""
 
-import itertools
-import functools as ft
-
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
 import numpy as np
-import tables
 import pyqtgraph as qtgraph
 import pyqtgraph.opengl as glgraph
 
-import vitables.plugin_utils as plugin_utils
+from vitables import utils as vtu
+
 from vtplot import plotutils
 from vtplot.infoframe import InfoFrame
 
@@ -63,7 +58,7 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self.setAttribute(qtcore.Qt.WA_DeleteOnClose)
         self._init_gui()
         # stuff that vitables looks for
-        self.dbt_leaf = plugin_utils.getVTGui().dbs_tree_model.nodeFromIndex(index)
+        self.dbt_leaf = vtu.getModel().nodeFromIndex(index)
         self.pindex = qtcore.QPersistentModelIndex(index)
         self.is_context_menu_custom = True
 
@@ -138,8 +133,8 @@ class SurfPlot(qtgui.QMdiSubWindow):
         x_count, y_count = self._data.shape
         x_size = max(min(x_count, _ROI_MIN_SIZE), x_count*_ROI_FRACTION)
         y_size = max(min(y_count, _ROI_MIN_SIZE), y_count*_ROI_FRACTION)
-        self._overview_roi = qtgraph.RectROI([0, 0], [x_size, y_size], 
-                                             pen=(0,9))
+        self._overview_roi = qtgraph.RectROI([0, 0], [x_size, y_size],
+                                             pen=(0, 9))
         self._overview_roi.addScaleHandle(pos=[0, 0], center=[1, 1])
         self._overview_roi.addScaleHandle(pos=[0, 1], center=[1, 0])
         self._overview_roi.addScaleHandle(pos=[1, 0], center=[0, 1])
@@ -190,14 +185,14 @@ class SurfPlot(qtgui.QMdiSubWindow):
         self._update_roi_boundaries_info(min_x, max_x, min_y, max_y)
         self._update_roi_statistics_info(min_x, max_x, min_y, max_y)
 
-    def _update_roi_boundaries_info(self, min_x=float('nan'), 
-                                    max_x=float('nan'), min_y=float('nan'), 
+    def _update_roi_boundaries_info(self, min_x=float('nan'),
+                                    max_x=float('nan'), min_y=float('nan'),
                                     max_y=float('nan')):
         legend = [_RANGE_TEMPLATE.format(name='x', min_=min_x, max_=max_x),
                   _RANGE_TEMPLATE.format(name='y', min_=min_y, max_=max_y)]
         self._info.update_entry(_ROI_GROUP, '<br/>'.join(legend))
 
-    def _update_roi_statistics_info(self, min_x=None, max_x=None, min_y=None, 
+    def _update_roi_statistics_info(self, min_x=None, max_x=None, min_y=None,
                                     max_y=None):
         if not min_x or not max_x or not min_y or not max_y:
             for stat_name in self._stat_groups:
@@ -239,4 +234,3 @@ class SurfPlot(qtgui.QMdiSubWindow):
             return
         self._vertical_curve.setData(y=self._data[x, ...])
         self._horizontal_curve.setData(y=self._data[..., y])
-    

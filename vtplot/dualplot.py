@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # dualplot.py
 #
@@ -22,10 +20,6 @@
 
 import itertools
 
-import PyQt4.QtGui as qtgui
-import PyQt4.QtCore as qtcore
-
-import tables
 import pyqtgraph as qtgraph
 
 from vtplot import plotutils

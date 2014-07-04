@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # singleplot.py
 #
@@ -27,10 +25,10 @@ import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
 import numpy as np
-import tables
 import pyqtgraph as qtgraph
 
-import vitables.plugin_utils as plugin_utils
+from vitables import utils as vtu
+
 from vtplot import plotutils
 from vtplot.infoframe import InfoFrame
 
@@ -40,21 +38,24 @@ _MINIMUM_HEIGHT = 600 # minimum window height
 _POSITION_GROUP = 'position'
 _VALUE_GROUP = 'value'
 
+
 class SinglePlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
-    _STAT_FUNCTION_DICT = {'min': np.amin, 'mean': np.mean, 'max': np.amax, 
+
+    _STAT_FUNCTION_DICT = {'min': np.amin, 'mean': np.mean, 'max': np.amax,
                            'std': np.std}
+
     def __init__(self, parent=None, index=None, leafs=None):
         super(SinglePlot, self).__init__(parent)
         # things to display on the right
         self._stat_groups = ['max', 'mean', 'std', 'min']
-        self._displayed_groups = [_POSITION_GROUP, _VALUE_GROUP] \
-                                 + self._stat_groups
+        self._displayed_groups = [_POSITION_GROUP,
+                                  _VALUE_GROUP] + self._stat_groups
         # store some vars
         self._leafs = leafs if leafs else []
         self._value_names = [l.name for l in self._leafs]
         # stuff that vitables looks for
-        self.dbt_leaf = plugin_utils.getVTGui().dbs_tree_model.nodeFromIndex(index)
+        self.dbt_leaf = vtu.getModel().nodeFromIndex(index)
         self.pindex = qtcore.QPersistentModelIndex(index)
         self.is_context_menu_custom = True
         # gui init stuff
@@ -68,7 +69,7 @@ class SinglePlot(qtgui.QMdiSubWindow):
         # signal slots
         self._mouse_position_proxy = qtgraph.SignalProxy(
             self._plot.scene().sigMouseMoved, rateLimit=30,
-            slot=ft.partial(plotutils.update_position_info, self._plot, 
+            slot=ft.partial(plotutils.update_position_info, self._plot,
                             self._info, _POSITION_GROUP))
         self._mouse_value_proxy = qtgraph.SignalProxy(
             self._plot.scene().sigMouseMoved, rateLimit=10,
@@ -103,12 +104,12 @@ class SinglePlot(qtgui.QMdiSubWindow):
         self.setWidget(self._splitter)
 
     def _update_info(self, info_name, values):
-        colors = [plotutils.get_data_item_color(di) 
+        colors = [plotutils.get_data_item_color(di)
                   for di in self._plot.listDataItems()]
         legend = []
         for value, name, color in zip(values, self._value_names, colors):
-            legend.append(plotutils.LEGEND_LINE.format(name=name, value=value, 
-                                              color=color))
+            legend.append(plotutils.LEGEND_LINE.format(name=name, value=value,
+                                                       color=color))
         self._info.update_entry(info_name, '<br/>'.join(legend))
 
     def _update_values_info(self, event=None):
@@ -126,7 +127,6 @@ class SinglePlot(qtgui.QMdiSubWindow):
             values = len(self._plot.listDataItems())*[float('nan')]
         self._update_info(_VALUE_GROUP, values)
 
-
     def _update_statistics_info(self, unused=None):
         """Update the statistics text edit on the info pane."""
         x_range = self._plot.viewRange()[0]
@@ -140,4 +140,3 @@ class SinglePlot(qtgui.QMdiSubWindow):
     def on_range_changed(self, range_):
         """Place holder for child to redefine."""
         pass
-
