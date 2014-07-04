@@ -19,13 +19,16 @@
 """About page info and names used to register plugin."""
 
 import os.path
+import PyQt4.QtCore as qtcore
+
+translate = qtcore.QCoreApplication.translate
 
 AUTHOR = 'Alexey Naydenov <alexey.naydenov@linux.com>'
 VERSION = '0.1'
 MODULE_NAME = 'vtplot'
 PLUGIN_CLASS = 'VTPlot'
 PLUGIN_NAME = 'vtplot'
-COMMENT = 'Plot 1D and 2D graphs.'
-MENU_NAME = 'Plot'
+COMMENT = translate('vtplot', 'Plot 1D and 2D graphs.')
+MENU_NAME = translate('vtplot', 'Plot')
 
 FOLDER = os.path.join(os.path.dirname(__file__))

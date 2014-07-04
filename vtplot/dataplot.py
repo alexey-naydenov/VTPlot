@@ -1,6 +1,3 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
-#
 # dataplot.py
 #
 # Copyright (C) 2013 Alexey Naydenov <alexey.naydenov@linux.com>
@@ -23,14 +20,15 @@
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
 
-import vitables.plugin_utils as vtpu
+import vitables.utils as vtu
+
 
 class DataPlot(qtgui.QMdiSubWindow):
     """Adapter for vitables."""
     def __init__(self, parent, index, widget):
         super(DataPlot, self).__init__(parent)
         # store some vars
-        self._vtgui = vtpu.getVTGui()
+        self._vtgui = vtu.getVTGui()
         # window options
         self.setWidget(widget)
         self.setAttribute(qtcore.Qt.WA_DeleteOnClose)

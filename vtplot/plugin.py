@@ -17,9 +17,7 @@
 
 """Main plugin class."""
 
-import os
-import sys
-import functools
+import logging
 
 import PyQt4.QtGui as qtgui
 import PyQt4.QtCore as qtcore
@@ -28,12 +26,10 @@ import numpy as np
 import tables
 import pyqtgraph as qtgraph
 
-from vitables import utils as vtutils
-from vitables import plugin_utils
+from vitables import utils as vtu
 from vitables.plugins.aboutpage import AboutPage
 
 import vtplot.defaults as defaults
-import vtplot.dataplot as dataplot
 import vtplot.singleplot as singleplot
 import vtplot.dualplot as dualplot
 import vtplot.surfplot as surfplot
@@ -46,8 +42,9 @@ plugin_class = defaults.PLUGIN_CLASS
 plugin_name = defaults.PLUGIN_NAME
 comment = defaults.COMMENT
 
-def _(s):
-    return qtgui.QApplication.translate(defaults.MODULE_NAME, s)
+
+translate = qtcore.QCoreApplication.translate
+
 
 class VTPlot(qtcore.QObject):
     """Plugin class for interaction with the main program."""
@@ -58,11 +55,11 @@ class VTPlot(qtcore.QObject):
 
     def __init__(self):
         super(VTPlot, self).__init__()
-        
-        self._vtgui = plugin_utils.getVTGui()
+
+        self._vtgui = vtu.getGui()
         self._mdiarea = self._vtgui.workspace
         self._settings = qtcore.QSettings()
-        self._logger = plugin_utils.getLogger(defaults.MODULE_NAME)
+        self._logger = logging.getLogger(__name__)
         self._add_submenu()
         # pyqtgraph options
         qtgraph.setConfigOption('background', 'w')
@@ -80,67 +77,66 @@ class VTPlot(qtcore.QObject):
     def _add_submenu(self):
         """Add submenu with plot actions."""
         self._array_actions = [
-            qtgui.QAction(_('Plot'), self, 
+            qtgui.QAction(translate('vtplot', 'Plot'), self,
                           triggered=self._plot_1d_array_with_zoom,
                           shortcut=qtgui.QKeySequence.UnknownKey,
-                          statusTip=_('Plot an array.')),
+                          statusTip=translate('vtplot', 'Plot an array.')),
         ]
         self._surf_actions = [
-            qtgui.QAction(_('Surf plot'), self,
+            qtgui.QAction(translate('vtplot', 'Surf plot'), self,
                           triggered=self._plot_surface,
                           shortcut=qtgui.QKeySequence.UnknownKey,
-                          statusTip=_('Plot surface.'))
+                          statusTip=translate('vtplot', 'Plot surface.'))
         ]
-        self._submenu = qtgui.QMenu(_(defaults.MENU_NAME))
+        self._submenu = qtgui.QMenu(translate('vtplot', defaults.MENU_NAME))
         for action in self._array_actions + self._surf_actions:
             self._submenu.addAction(action)
         # add to menus
-        plugin_utils.addToMenuBar(self._submenu)
+        vtu.addToMenuBar(self._submenu)
         self._submenu.aboutToShow.connect(self._enable_for_right_dimension)
-        plotutils.addToLeafContextMenu(self._array_actions, 
+        plotutils.addToLeafContextMenu(self._array_actions,
                                        self._enable_for_right_dimension)
-        plotutils.addToLeafContextMenu(self._surf_actions, 
+        plotutils.addToLeafContextMenu(self._surf_actions,
                                        self._enable_for_right_dimension)
-        
 
     def _enable_for_right_dimension(self):
         """Enable array plots only if all selected objects are 1d arrays."""
         enabled = True
         for leaf in plotutils.getSelectedLeafs():
-            if not isinstance(leaf, tables.array.Array) or len(leaf.shape) != 1:
+            if not isinstance(leaf, tables.array.Array) \
+               or len(leaf.shape) != 1:
                 enabled = False
                 break
         for action in self._array_actions:
             action.setEnabled(enabled)
         enabled = True
         for leaf in plotutils.getSelectedLeafs():
-            if not isinstance(leaf, tables.array.Array) or len(leaf.shape) != 2:
+            if not isinstance(leaf, tables.array.Array) \
+               or len(leaf.shape) != 2:
                 enabled = False
                 break
         for action in self._surf_actions:
             action.setEnabled(enabled)
 
-
-    @plugin_utils.long_action(_('Plotting data, please wait ...'))
-    def _plot_1d_array_with_zoom(self, unused):
+    @vtu.long_action(translate('vtplot', 'Plotting data, please wait ...'))
+    def _plot_1d_array_with_zoom(self, _):
         """Display two plots: overall view and zoomed to region."""
-        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
+        index = self._vtgui.dbs_tree_view.currentIndex()
         leafs = plotutils.getSelectedLeafs()
         for leaf in leafs:
             if leaf.dtype.kind in 'cSUV':
                 self._logger.error(
                     'Can not plot type: {0}'.format(str(leaf.dtype)))
                 return
-        plot_window = dualplot.DualPlot(parent=self._mdiarea, 
+        plot_window = dualplot.DualPlot(parent=self._mdiarea,
                                         index=index, leafs=leafs)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
 
-
-    @plugin_utils.long_action(_('Plotting data, please wait ...'))
-    def _plot_1d_array(self, unused):
+    @vtu.long_action(translate('vtplot', 'Plotting data, please wait ...'))
+    def _plot_1d_array(self, _):
         """Display one plot with crosshair ad statistics."""
-        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
+        index = self._vtgui.dbs_tree_view.currentIndex()
         leafs = plotutils.getSelectedLeafs()
         for leaf in leafs:
             if leaf.dtype.kind in 'cSUV':
@@ -151,12 +147,12 @@ class VTPlot(qtcore.QObject):
                                             index=index, leafs=leafs)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
-        
-    @plugin_utils.long_action(_('Plotting data, please wait ...'))
-    def _plot_surface(self, unused):
+
+    @vtu.long_action(translate('vtplot', 'Plotting data, please wait ...'))
+    def _plot_surface(self, _):
         """Display two plots: overall view and zoomed to region."""
-        index = plugin_utils.getVTGui().dbs_tree_view.currentIndex()
-        leaf = plugin_utils.getSelectedLeaf()
+        index = self._vtgui.dbs_tree_view.currentIndex()
+        leaf = vtu.getSelectedLeaf()
         if leaf.dtype.kind == 'c':
             data = np.abs(leaf)
         else:
