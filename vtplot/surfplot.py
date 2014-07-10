@@ -169,8 +169,8 @@ class SurfPlot(qtgui.QMdiSubWindow):
              -incline, spread/3, 1])
 
     def _update_surface(self, x_range, y_range):
-        data = np.copy(self._data[x_range[0]:x_range[1],
-                                  y_range[0]:y_range[1]])
+        data = np.array(self._data[x_range[0]:x_range[1],
+                                   y_range[0]:y_range[1]], dtype=np.float)
         std = np.std(data)
         data -= np.mean(data)
         data /= 8*std
