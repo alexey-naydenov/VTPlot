@@ -34,6 +34,7 @@ import vtplot.defaults as defaults
 import vtplot.singleplot as singleplot
 import vtplot.dualplot as dualplot
 import vtplot.surfplot as surfplot
+import vtplot.imageview as imageview
 import vtplot.plotutils as plotutils
 
 __author__ = defaults.AUTHOR
@@ -83,12 +84,23 @@ class VTPlot(qtcore.QObject):
                           shortcut=qtgui.QKeySequence.UnknownKey,
                           statusTip=translate('vtplot', 'Plot a dataset.')),
         ]
+        self._image_actions = [
+            qtgui.QAction(translate('vtplot', 'View Image'), self,
+                          triggered=self._view_image,
+                          shortcut=qtgui.QKeySequence.UnknownKey,
+                          statusTip=translate('vtplot', 'Display an image.')),
+        ]
         submenu = qtgui.QMenu(defaults.MENU_NAME)
         for action in self._plot_actions:
             submenu.addAction(action)
+        for action in self._image_actions:
+            submenu.addAction(action)
         # add to menus
         vtu.addToMenuBar(submenu, self._check_selection)
-        vtu.addToLeafContextMenu(self._plot_actions, self._check_selection)
+        vtu.addToLeafContextMenu(self._plot_actions,
+                                 self._check_selection)
+        vtu.addToLeafContextMenu(self._image_actions,
+                                 self._check_selection)
 
     def _check_selection(self):
         """Enable array plots only if all selected objects are 1d arrays."""
@@ -116,3 +128,11 @@ class VTPlot(qtcore.QObject):
                 leaf=nodes[0], leaf_name=leaf_name)
         self._mdiarea.addSubWindow(plot_window)
         plot_window.show()
+
+    @vtu.long_action(translate('vtplot', 'Plotting data, please wait ...'))
+    def _view_image(self, _):
+        image_index = vtu.getSelectedIndexes()[0]
+        image_window = imageview.ImageView(parent=self._mdiarea,
+                                           index=image_index)
+        self._mdiarea.addSubWindow(image_window)
+        image_window.show()
